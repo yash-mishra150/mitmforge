@@ -1,51 +1,28 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
+import { useEffect } from "react";
 import "./App.css";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { commands, type ProxyEvent } from "./bindings";
+import { useTraffic } from "./features/traffic/store";
+import { TrafficGrid } from "./features/traffic/TrafficGrid";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+// Single backend → UI event channel; payload is a tagged ProxyEvent.
+const PROXY_EVENT = "proxy://event";
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+export default function App() {
+  useEffect(() => {
+    const unlisten = getCurrentWebviewWindow().listen<ProxyEvent>(PROXY_EVENT, ({ payload }) => {
+      if (payload.type === "request") {
+        useTraffic.getState().addRequest(payload.entry);
+      } else {
+        useTraffic.getState().addResponse(payload.id, payload.status);
+      }
+    });
+    // Start the proxy only after the listener is attached, so no traffic is lost.
+    void commands.proxyStart();
+    return () => {
+      void unlisten.then((f) => f());
+    };
+  }, []);
 
-  return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
-  );
+  return <TrafficGrid />;
 }
-
-export default App;
