@@ -3,6 +3,7 @@ use specta::Type;
 
 mod commands;
 pub mod proxy;
+mod system_proxy;
 
 /// Single error type crossing the IPC boundary; the UI switches on `kind`.
 #[derive(Clone, Debug, thiserror::Error, Serialize, Deserialize, Type)]
@@ -15,7 +16,7 @@ pub enum ProxyError {
     Internal { message: String },
 }
 
-/// Name of the single backend → UI event. Payload: [`ProxyEvent`].
+/// Name of the single backend → UI event. Payload: [`proxy::ProxyEvent`].
 pub const PROXY_EVENT: &str = "proxy://event";
 
 /// Also used by `export_bindings` (tests) to regenerate `src/bindings.ts`.
@@ -41,13 +42,21 @@ pub fn run() {
     export_bindings(&builder);
 
     let typed_invoke = builder.invoke_handler();
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .manage(proxy::BodyStore::shared())
         .invoke_handler(typed_invoke)
         .setup(move |app| {
             builder.mount_events(app);
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(|_app, event| {
+        if let tauri::RunEvent::Exit = event {
+            // Put the system proxy back the way we found it (if we set it).
+            system_proxy::restore_on_exit();
+        }
+    });
 }

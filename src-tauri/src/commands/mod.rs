@@ -9,7 +9,13 @@ use tauri_specta::collect_commands;
 /// Also used by `export_bindings` (tests) to regenerate `src/bindings.ts`.
 pub fn builder() -> tauri_specta::Builder<tauri::Wry> {
     tauri_specta::Builder::<tauri::Wry>::new()
-        .commands(collect_commands![proxy::proxy_start])
+        .commands(collect_commands![
+            proxy::proxy_start,
+            proxy::proxy_status,
+            proxy::proxy_install_ca,
+            proxy::proxy_set_system,
+            proxy::traffic_body,
+        ])
         .typ::<ProxyEvent>()
         .dangerously_cast_bigints_to_number()
 }

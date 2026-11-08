@@ -2393,6 +2393,7 @@ dependencies = [
 name = "mitmforge"
 version = "0.1.0"
 dependencies = [
+ "http-body-util",
  "hudsucker",
  "serde",
  "serde_json",
@@ -2402,8 +2403,11 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-opener",
  "tauri-specta",
+ "tempfile",
  "thiserror 2.0.21",
  "tokio",
+ "winapi",
+ "winreg",
 ]
 
 [[package]]

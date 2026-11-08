@@ -3,5 +3,6 @@ id = "npm:tauri"
 name = "npm run tauri dev"
 kind = "npm"
 command = "npm"
-args = ["run", "tauri"]
+args = ["run", "tauri", "dev"]
 debug-adapter = "js-debug"
+params = { arguments = "dev", command = "run", packageDir = "", packageManager = "npm", script = "tauri" }
