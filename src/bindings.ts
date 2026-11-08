@@ -14,9 +14,40 @@ export const commands = {
 	 *  relaunch (STARTED never resets); a lifecycle command set fixes that later.
 	 */
 	proxyStart: () => typedError<null, ProxyError>(__TAURI_INVOKE("proxy_start")),
+	proxyStatus: () => __TAURI_INVOKE<ProxyStatus_Serialize>("proxy_status"),
+	/**
+	 *  Installs the persisted CA cert into the current user's Root store via
+	 *  `certutil` (no admin; Chrome/Edge/WebView2 trust the user Root store).
+	 */
+	proxyInstallCa: () => typedError<string, ProxyError>(__TAURI_INVOKE("proxy_install_ca")),
+	/**
+	 *  Toggles Windows system-wide proxy capture (what Proxyman's "Capture System
+	 *  Traffic" does). Previous settings are restored when the app exits.
+	 */
+	proxySetSystem: (enabled: boolean) => typedError<null, ProxyError>(__TAURI_INVOKE("proxy_set_system", { enabled })),
+	/**
+	 *  Lazily fetches the captured request/response bodies of one exchange
+	 *  (BRD: heavy payloads load only when the row is opened).
+	 */
+	trafficBody: (id: number) => __TAURI_INVOKE<BodyText_Serialize | null>("traffic_body", { id }),
 };
 
 /* Types */
+/**  Lossy-UTF-8 body snapshots for the inspector. */
+export type BodyText = BodyText_Serialize | BodyText_Deserialize;
+
+/**  Lossy-UTF-8 body snapshots for the inspector. */
+export type BodyText_Deserialize = {
+	req_body?: string | null,
+	res_body?: string | null,
+};
+
+/**  Lossy-UTF-8 body snapshots for the inspector. */
+export type BodyText_Serialize = {
+	req_body: string | null,
+	res_body: string | null,
+};
+
 /**  Single error type crossing the IPC boundary; the UI switches on `kind`. */
 export type ProxyError = "AlreadyRunning" | ({ Io: {
 	message: string,
@@ -25,7 +56,32 @@ export type ProxyError = "AlreadyRunning" | ({ Io: {
 } }) & { Io?: never };
 
 /**  Backend → UI events. Serialized as a tagged enum (`type` field). */
-export type ProxyEvent = { type: "request"; entry: TrafficEntry } | { type: "response"; id: number; status: number };
+export type ProxyEvent = ProxyEvent_Serialize | ProxyEvent_Deserialize;
+
+/**  Backend → UI events. Serialized as a tagged enum (`type` field). */
+export type ProxyEvent_Deserialize = { type: "request"; entry: TrafficEntry } | { type: "response"; id: number; status: number; durationMs?: number | null };
+
+/**  Backend → UI events. Serialized as a tagged enum (`type` field). */
+export type ProxyEvent_Serialize = { type: "request"; entry: TrafficEntry } | { type: "response"; id: number; status: number; durationMs: number | null };
+
+/**  What the header pills show. */
+export type ProxyStatus = ProxyStatus_Serialize | ProxyStatus_Deserialize;
+
+/**  What the header pills show. */
+export type ProxyStatus_Deserialize = {
+	/**  The engine was started in this app run. */
+	listening: boolean,
+	/**  Windows system proxy on/off (`None` if it cannot be read). */
+	system_proxy?: boolean | null,
+};
+
+/**  What the header pills show. */
+export type ProxyStatus_Serialize = {
+	/**  The engine was started in this app run. */
+	listening: boolean,
+	/**  Windows system proxy on/off (`None` if it cannot be read). */
+	system_proxy: boolean | null,
+};
 
 /**  One intercepted exchange. `Response` events patch the row by `id`. */
 export type TrafficEntry = {

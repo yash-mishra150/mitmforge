@@ -14,7 +14,7 @@ export default function App() {
       if (payload.type === "request") {
         useTraffic.getState().addRequest(payload.entry);
       } else {
-        useTraffic.getState().addResponse(payload.id, payload.status);
+        useTraffic.getState().addResponse(payload.id, payload.status, payload.durationMs ?? null);
       }
     });
     // Start the proxy only after the listener is attached, so no traffic is lost.
