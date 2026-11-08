@@ -1,0 +1,7 @@
+[[configurations]]
+id = "npm:tauri"
+name = "npm run tauri dev"
+kind = "npm"
+command = "npm"
+args = ["run", "tauri"]
+debug-adapter = "js-debug"
