@@ -72,6 +72,21 @@ fn now_ms() -> u64 {
         .unwrap_or(0)
 }
 
+/// Serializes headers for the inspector (lossy; capped by the reader).
+fn headers_text(headers: &hudsucker::hyper::header::HeaderMap) -> String {
+    use std::fmt::Write;
+    let mut s = String::new();
+    for (name, value) in headers {
+        let _ = writeln!(
+            s,
+            "{}: {}",
+            name,
+            value.to_str().unwrap_or("<binary value>")
+        );
+    }
+    s
+}
+
 fn capture_text(bytes: &[u8]) -> Option<String> {
     if bytes.is_empty() {
         return None;
@@ -118,10 +133,12 @@ fn decodable(content_encoding: Option<&str>) -> bool {
     }
 }
 
-/// Lazily-fetched captured bodies for one exchange (lossy UTF-8 on read).
+/// Lazily-fetched captured data for one exchange (lossy UTF-8 on read).
 #[derive(Default)]
 pub struct Captured {
+    pub req_headers: Option<String>,
     pub req: Arc<Mutex<Vec<u8>>>,
+    pub res_headers: Option<String>,
     pub res: Arc<Mutex<Vec<u8>>>,
 }
 
@@ -143,12 +160,27 @@ impl BodyStore {
         }))
     }
 
-    fn insert(&mut self, id: u64, captured: Captured) {
-        self.map.insert(id, captured);
+    fn insert_request(&mut self, id: u64, req_headers: String, req: Arc<Mutex<Vec<u8>>>) {
+        self.map.insert(
+            id,
+            Captured {
+                req_headers: Some(req_headers),
+                req,
+                res_headers: None,
+                res: Arc::default(),
+            },
+        );
         self.order.push_back(id);
         while self.order.len() > MAX_STORED {
             let evict = self.order.pop_front().unwrap();
             self.map.remove(&evict);
+        }
+    }
+
+    fn complete(&mut self, id: u64, res_headers: String, res: Arc<Mutex<Vec<u8>>>) {
+        if let Some(captured) = self.map.get_mut(&id) {
+            captured.res_headers = Some(res_headers);
+            captured.res = res;
         }
     }
 
@@ -162,14 +194,21 @@ impl BodyStore {
             let buf = captured.res.lock().unwrap();
             capture_text(&buf)
         };
-        Some(BodyText { req_body, res_body })
+        Some(BodyText {
+            req_headers: captured.req_headers.clone(),
+            req_body,
+            res_headers: captured.res_headers.clone(),
+            res_body,
+        })
     }
 }
 
-/// Lossy-UTF-8 body snapshots for the inspector.
+/// Lossy-UTF-8 header/body snapshots for the inspector.
 #[derive(Clone, Debug, Serialize, Deserialize, Type)]
 pub struct BodyText {
+    pub req_headers: Option<String>,
     pub req_body: Option<String>,
+    pub res_headers: Option<String>,
     pub res_body: Option<String>,
 }
 
@@ -177,7 +216,6 @@ pub struct BodyText {
 struct Pending {
     id: u64,
     started: Instant,
-    req_capture: Arc<Mutex<Vec<u8>>>,
 }
 
 /// Per-connection handler: hudsucker passes each request/response pair to the
@@ -203,12 +241,21 @@ impl HttpHandler for EmitHandler {
             url: req.uri().to_string(),
             started_at_ms: now_ms(),
         };
+        // Intercepted CONNECT tunnels: the decrypted requests follow as their
+        // own rows; the tunnel row itself carries no content, so don't log it.
+        if req.method().as_str() == "CONNECT" {
+            return RequestOrResponse::Request(req);
+        }
         let req_capture: Arc<Mutex<Vec<u8>>> = Arc::default();
         self.pending.push_back(Pending {
             id: entry.id,
             started: Instant::now(),
-            req_capture: req_capture.clone(),
         });
+        self.store.lock().unwrap().insert_request(
+            entry.id,
+            headers_text(req.headers()),
+            req_capture.clone(),
+        );
         (self.sink)(ProxyEvent::Request { entry });
 
         let encoding = req
@@ -263,17 +310,15 @@ impl HttpHandler for EmitHandler {
             res
         };
 
+        let res_headers = headers_text(res.headers());
         let (parts, body) = res.into_parts();
         let res_capture: Arc<Mutex<Vec<u8>>> = Arc::default();
         let body = tee(body, res_capture.clone());
         if let Some(p) = &pending {
-            self.store.lock().unwrap().insert(
-                p.id,
-                Captured {
-                    req: p.req_capture.clone(),
-                    res: res_capture.clone(),
-                },
-            );
+            self.store
+                .lock()
+                .unwrap()
+                .complete(p.id, res_headers, res_capture);
         }
         let duration_ms = pending
             .as_ref()
@@ -294,13 +339,10 @@ impl HttpHandler for EmitHandler {
         // Upstream failed: still emit a status (502) so the queue stays balanced.
         let pending = self.pending.pop_front();
         if let Some(p) = &pending {
-            self.store.lock().unwrap().insert(
-                p.id,
-                Captured {
-                    req: p.req_capture.clone(),
-                    res: Arc::default(),
-                },
-            );
+            self.store
+                .lock()
+                .unwrap()
+                .complete(p.id, String::new(), Arc::default());
         }
         let duration_ms = pending
             .as_ref()

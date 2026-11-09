@@ -33,18 +33,22 @@ export const commands = {
 };
 
 /* Types */
-/**  Lossy-UTF-8 body snapshots for the inspector. */
+/**  Lossy-UTF-8 header/body snapshots for the inspector. */
 export type BodyText = BodyText_Serialize | BodyText_Deserialize;
 
-/**  Lossy-UTF-8 body snapshots for the inspector. */
+/**  Lossy-UTF-8 header/body snapshots for the inspector. */
 export type BodyText_Deserialize = {
+	req_headers?: string | null,
 	req_body?: string | null,
+	res_headers?: string | null,
 	res_body?: string | null,
 };
 
-/**  Lossy-UTF-8 body snapshots for the inspector. */
+/**  Lossy-UTF-8 header/body snapshots for the inspector. */
 export type BodyText_Serialize = {
+	req_headers: string | null,
 	req_body: string | null,
+	res_headers: string | null,
 	res_body: string | null,
 };
 
