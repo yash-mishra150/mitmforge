@@ -235,18 +235,30 @@ impl HttpHandler for EmitHandler {
         _ctx: &HttpContext,
         req: Request<Body>,
     ) -> RequestOrResponse {
+        let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
         let entry = TrafficEntry {
-            id: NEXT_ID.fetch_add(1, Ordering::Relaxed),
+            id,
             method: req.method().to_string(),
             url: req.uri().to_string(),
             started_at_ms: now_ms(),
         };
-        // Intercepted CONNECT tunnels: the decrypted requests follow as their
-        // own rows; the tunnel row itself carries no content, so don't log it.
+        // CONNECT tunnel: logged like Proxyman (with headers); we intercept,
+        // so it answers 200 and the decrypted requests follow as their own
+        // rows. Kept out of the pending queue so correlation stays correct.
+        let req_capture: Arc<Mutex<Vec<u8>>> = Arc::default();
         if req.method().as_str() == "CONNECT" {
+            self.store
+                .lock()
+                .unwrap()
+                .insert_request(id, headers_text(req.headers()), req_capture);
+            (self.sink)(ProxyEvent::Request { entry });
+            (self.sink)(ProxyEvent::Response {
+                id,
+                status: 200,
+                duration_ms: None,
+            });
             return RequestOrResponse::Request(req);
         }
-        let req_capture: Arc<Mutex<Vec<u8>>> = Arc::default();
         self.pending.push_back(Pending {
             id: entry.id,
             started: Instant::now(),
