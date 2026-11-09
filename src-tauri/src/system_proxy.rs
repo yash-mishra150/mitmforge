@@ -86,7 +86,8 @@ mod imp {
             .map_err(|e| format!("set ProxyServer: {e}"))?;
         // Keep local traffic out of the proxy: an empty bypass list routes
         // even localhost dev servers (including our own webview) through us.
-        let prev_override = SAVED.lock().unwrap().as_ref().and_then(|s| s.2.clone());
+        // (`saved` already guards SAVED — std Mutex is not reentrant.)
+        let prev_override = saved.as_ref().and_then(|s| s.2.clone());
         let mut entries: Vec<String> = prev_override
             .unwrap_or_default()
             .split(';')

@@ -17,7 +17,8 @@ export default defineConfig(() => ({
   server: {
     port: 1420,
     strictPort: true,
-    host: host || false,
+    // Pin IPv4: Node may bind ::1 only, which the WebView cannot reach.
+    host: "127.0.0.1",
     hmr: host
       ? {
           protocol: "ws",

@@ -3,7 +3,7 @@ use specta::Type;
 
 mod commands;
 pub mod proxy;
-mod system_proxy;
+pub mod system_proxy;
 
 /// Single error type crossing the IPC boundary; the UI switches on `kind`.
 #[derive(Clone, Debug, thiserror::Error, Serialize, Deserialize, Type)]
