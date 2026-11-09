@@ -22,7 +22,7 @@ use std::{
     path::Path,
     sync::{
         Arc, Mutex,
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
@@ -64,6 +64,18 @@ pub enum ProxyEvent {
 pub type Sink = Arc<dyn Fn(ProxyEvent) + Send + Sync>;
 
 static NEXT_ID: AtomicU64 = AtomicU64::new(1);
+/// Decrypt HTTPS only when the CA is trusted; otherwise blind-tunnel
+/// (Proxyman's default): real certificates reach the client, nothing
+/// breaks, and CONNECT rows still log domains.
+static INTERCEPT_TLS: AtomicBool = AtomicBool::new(false);
+
+pub fn set_intercept_tls(enabled: bool) {
+    INTERCEPT_TLS.store(enabled, Ordering::SeqCst);
+}
+
+fn intercept_tls() -> bool {
+    INTERCEPT_TLS.load(Ordering::SeqCst)
+}
 
 fn now_ms() -> u64 {
     SystemTime::now()
@@ -230,6 +242,9 @@ struct EmitHandler {
 }
 
 impl HttpHandler for EmitHandler {
+    async fn should_intercept_connect(&mut self, _ctx: &HttpContext, _req: &Request<Body>) -> bool {
+        intercept_tls()
+    }
     async fn handle_request(
         &mut self,
         _ctx: &HttpContext,

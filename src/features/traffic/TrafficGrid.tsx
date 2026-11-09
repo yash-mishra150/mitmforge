@@ -182,9 +182,7 @@ export function TrafficGrid() {
           <button
             type="button"
             onClick={toggleSystem}
-            disabled={status !== null && !status.ca_trusted}
-            title={status?.ca_trusted === false ? "Trust the certificate first" : undefined}
-            className={`flex items-center gap-1 rounded px-2 py-1 disabled:cursor-not-allowed disabled:opacity-40 ${systemOn ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125`}
+            className={`flex items-center gap-1 rounded px-2 py-1 ${systemOn ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125`}
           >
             {systemOn ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
             System proxy {systemOn ? "on" : "off"}
