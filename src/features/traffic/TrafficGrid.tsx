@@ -50,15 +50,22 @@ function BodyPane({ row }: { row: TrafficRow }) {
   }, [row.id, row.status]);
 
   return (
-    <div className="min-h-0 shrink-0 overflow-auto border-t border-neutral-800 bg-neutral-950 p-3 text-xs">
-      <div className="mb-2 flex gap-4 text-neutral-400">
-        <span>
-          <span className="text-neutral-600">req</span> {body?.req_body ?? "…"}
-        </span>
-        <span>
-          <span className="text-neutral-600">res</span> {body?.res_body ?? "…"}
-        </span>
-      </div>
+    <div className="grid h-64 shrink-0 grid-cols-2 gap-px overflow-hidden border-t border-neutral-800 bg-neutral-950 text-xs">
+      {(
+        [
+          ["Request", body?.req_headers, body?.req_body],
+          ["Response", body?.res_headers, body?.res_body],
+        ] as const
+      ).map(([title, headers, content]) => (
+        <div key={title} className="overflow-auto p-2">
+          <div className="mb-1 text-neutral-500">{title}</div>
+          <pre className="whitespace-pre-wrap break-all text-neutral-300">
+            {headers || ""}
+            {headers && content ? "\n\n" : ""}
+            {content || (body ? "" : "…")}
+          </pre>
+        </div>
+      ))}
     </div>
   );
 }

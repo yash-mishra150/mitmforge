@@ -40,7 +40,7 @@ async fn logs_plain_http_exchange() {
     };
 
     let req = format!(
-        "GET http://{upstream_addr}/hello HTTP/1.1\r\nHost: example.test\r\nConnection: close\r\n\r\n"
+        "GET http://{upstream_addr}/hello HTTP/1.1\r\nhost: example.test\r\nConnection: close\r\n\r\n"
     );
     stream.write_all(req.as_bytes()).await.unwrap();
     let mut buf = Vec::new();
@@ -67,12 +67,27 @@ async fn logs_plain_http_exchange() {
     assert_eq!(response.0, 200);
     assert!(response.1.is_some(), "duration is measured");
 
-    // Bodies are captured and fetched lazily.
+    // Bodies are captured and fetched lazily, together with headers.
     let bodies = store
         .lock()
         .unwrap()
         .get(request.id)
-        .expect("captured bodies");
+        .expect("captured exchange");
+    assert!(
+        bodies
+            .req_headers
+            .as_deref()
+            .unwrap_or("")
+            .contains("host: example.test")
+    );
+    assert!(bodies.req_body.is_none(), "GET has no request body");
+    assert!(
+        bodies
+            .res_headers
+            .as_deref()
+            .unwrap_or("")
+            .contains("content-length: 13")
+    );
     assert!(
         bodies
             .res_body
