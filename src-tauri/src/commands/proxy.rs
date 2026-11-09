@@ -13,8 +13,11 @@ static STARTED: AtomicBool = AtomicBool::new(false);
 
 /// Starts the proxy engine once; traffic streams to the UI as `ProxyEvent`s.
 /// Called from the frontend *after* the event listener is attached, so early
-/// traffic is not lost. shortcut: if the engine dies, restarting needs an app
-/// relaunch (STARTED never resets); a lifecycle command set fixes that later.
+/// traffic is not lost. Proxyman-style: the system proxy turns on
+/// automatically, but only when the CA is trusted and the port is free — we
+/// never route traffic into a dead proxy. shortcut: if the engine dies,
+/// restarting needs an app relaunch (STARTED never resets); a lifecycle
+/// command set fixes that later.
 #[tauri::command]
 #[specta::specta]
 pub async fn proxy_start(
@@ -24,6 +27,15 @@ pub async fn proxy_start(
     if STARTED.swap(true, Ordering::SeqCst) {
         return Err(ProxyError::AlreadyRunning);
     }
+    // Fail fast when the port is taken instead of silently breaking browsing.
+    let addr: std::net::SocketAddr = "127.0.0.1:8080".parse().unwrap();
+    if std::net::TcpListener::bind(addr).is_err() {
+        STARTED.store(false, Ordering::SeqCst);
+        return Err(ProxyError::Io {
+            message: "port 8080 is already in use".into(),
+        });
+    }
+
     let ca_dir = app
         .path()
         .app_data_dir()
@@ -38,11 +50,17 @@ pub async fn proxy_start(
     });
     let store = store.inner().clone();
     tauri::async_runtime::spawn(async move {
-        let addr = "127.0.0.1:8080".parse().unwrap();
         if let Err(e) = crate::proxy::start(sink, addr, Some(&ca_dir), store).await {
             eprintln!("proxy engine stopped: {e}");
         }
     });
+
+    // Auto-capture, Proxyman-style — but only into a working setup.
+    if crate::system_proxy::ca_trusted()
+        && let Err(e) = crate::system_proxy::enable("127.0.0.1:8080")
+    {
+        eprintln!("system proxy auto-enable failed: {e}");
+    }
     Ok(())
 }
 

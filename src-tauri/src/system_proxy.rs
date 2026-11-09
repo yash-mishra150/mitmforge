@@ -22,6 +22,18 @@ mod imp {
             .map_err(|e| format!("open Internet Settings: {e}"))
     }
 
+    /// True when our Root CA is present in the user store. shortcut: matches
+    /// the subject name via `certutil`, not the exact certificate bytes.
+    pub fn ca_trusted() -> bool {
+        let Ok(out) = std::process::Command::new("certutil")
+            .args(["-user", "-store", "Root"])
+            .output()
+        else {
+            return false;
+        };
+        String::from_utf8_lossy(&out.stdout).contains("MitmForge Root CA")
+    }
+
     fn refresh() {
         // SAFETY: no handle, options take no buffers; notify WinINet consumers
         // (browsers) so the change applies live, without app restarts.
@@ -119,6 +131,9 @@ mod imp {
 mod imp {
     pub fn current() -> Option<bool> {
         None
+    }
+    pub fn ca_trusted() -> bool {
+        false
     }
     pub fn enable(_server: &str) -> Result<(), String> {
         Err("system proxy control is Windows-only for now".into())
