@@ -71,6 +71,9 @@ pub struct ProxyStatus {
     pub listening: bool,
     /// Windows system proxy on/off (`None` if it cannot be read).
     pub system_proxy: Option<bool>,
+    /// Our CA is in the trust store; required before system proxy is offered,
+    /// otherwise enabling it only breaks every HTTPS site.
+    pub ca_trusted: bool,
 }
 
 #[tauri::command]
@@ -79,6 +82,7 @@ pub fn proxy_status() -> ProxyStatus {
     ProxyStatus {
         listening: STARTED.load(Ordering::SeqCst),
         system_proxy: crate::system_proxy::current(),
+        ca_trusted: crate::system_proxy::ca_trusted(),
     }
 }
 
@@ -121,9 +125,16 @@ pub async fn proxy_install_ca(app: AppHandle) -> Result<String, ProxyError> {
 
 /// Toggles Windows system-wide proxy capture (what Proxyman's "Capture System
 /// Traffic" does). Previous settings are restored when the app exits.
+/// Refused until the CA is trusted: with an untrusted CA, enabling only
+/// breaks every HTTPS site instead of capturing anything.
 #[tauri::command]
 #[specta::specta]
 pub async fn proxy_set_system(enabled: bool) -> Result<(), ProxyError> {
+    if enabled && !crate::system_proxy::ca_trusted() {
+        return Err(ProxyError::Internal {
+            message: "Install the root certificate first (Trust CA)".into(),
+        });
+    }
     let result = if enabled {
         crate::system_proxy::enable("127.0.0.1:8080")
     } else {
