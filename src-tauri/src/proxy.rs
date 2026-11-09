@@ -245,6 +245,14 @@ impl HttpHandler for EmitHandler {
     async fn should_intercept_connect(&mut self, _ctx: &HttpContext, _req: &Request<Body>) -> bool {
         intercept_tls()
     }
+
+    async fn should_intercept_tls(
+        &mut self,
+        _ctx: &HttpContext,
+        _client_hello: hudsucker::rustls::server::ClientHello<'_>,
+    ) -> bool {
+        intercept_tls()
+    }
     async fn handle_request(
         &mut self,
         _ctx: &HttpContext,
