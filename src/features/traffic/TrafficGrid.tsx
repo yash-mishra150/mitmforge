@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ShieldCheck, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { call, commands, type BodyText, type ProxyStatus } from "../../platform/ipc";
@@ -70,6 +70,50 @@ function BodyPane({ row }: { row: TrafficRow }) {
   );
 }
 
+/** Memoized row: only the row whose object changed re-renders, not the grid. */
+const RowView = memo(function RowView({
+  row,
+  selected,
+  index,
+  start,
+  size,
+  onSelect,
+}: {
+  row: TrafficRow;
+  selected: boolean;
+  index: number;
+  start: number;
+  size: number;
+  onSelect: (id: number) => void;
+}) {
+  const { host, path } = splitUrl(row.url);
+  return (
+    <div
+      onClick={() => onSelect(row.id)}
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: size,
+        transform: `translateY(${start}px)`,
+      }}
+      className={`grid cursor-pointer grid-cols-[3rem_4.5rem_3.5rem_4rem_1fr_5.5rem] items-center gap-x-3 border-b border-neutral-800/50 px-3 ${selected ? "bg-neutral-800" : "hover:bg-neutral-800/50"}`}
+      data-index={index}
+    >
+      <span className="text-neutral-600">{row.id}</span>
+      <span className={METHOD_COLORS[row.method] ?? "text-neutral-300"}>{row.method}</span>
+      <span className={statusColor(row.status)}>{row.status ?? "…"}</span>
+      <span className="text-neutral-500">{row.durationMs ?? ""}</span>
+      <span className="truncate">
+        <span className="text-neutral-500">{host}</span>
+        <span className="text-neutral-300">{path}</span>
+      </span>
+      <span className="text-neutral-600">{time(row.started_at_ms)}</span>
+    </div>
+  );
+});
+
 export function TrafficGrid() {
   const rows = useTraffic((s) => s.rows);
   const selectedId = useTraffic((s) => s.selectedId);
@@ -113,6 +157,10 @@ export function TrafficGrid() {
 
   const selected = rows.find((r) => r.id === selectedId) ?? null;
   const systemOn = status?.system_proxy ?? false;
+  const onRowClick = useCallback(
+    (id: number) => select(useTraffic.getState().selectedId === id ? null : id),
+    [select],
+  );
 
   return (
     <div className="flex h-full flex-col bg-neutral-900 text-neutral-200">
@@ -164,35 +212,17 @@ export function TrafficGrid() {
 
       <div ref={parentRef} className="min-h-0 flex-1 overflow-auto font-mono text-xs">
         <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
-          {virtualizer.getVirtualItems().map((v) => {
-            const r = rows[v.index];
-            const { host, path } = splitUrl(r.url);
-            return (
-              <div
-                key={r.id}
-                onClick={() => select(r.id === selectedId ? null : r.id)}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: v.size,
-                  transform: `translateY(${v.start}px)`,
-                }}
-                className={`grid cursor-pointer grid-cols-[3rem_4.5rem_3.5rem_4rem_1fr_5.5rem] items-center gap-x-3 border-b border-neutral-800/50 px-3 ${r.id === selectedId ? "bg-neutral-800" : "hover:bg-neutral-800/50"}`}
-              >
-                <span className="text-neutral-600">{r.id}</span>
-                <span className={METHOD_COLORS[r.method] ?? "text-neutral-300"}>{r.method}</span>
-                <span className={statusColor(r.status)}>{r.status ?? "…"}</span>
-                <span className="text-neutral-500">{r.durationMs ?? ""}</span>
-                <span className="truncate">
-                  <span className="text-neutral-500">{host}</span>
-                  <span className="text-neutral-300">{path}</span>
-                </span>
-                <span className="text-neutral-600">{time(r.started_at_ms)}</span>
-              </div>
-            );
-          })}
+          {virtualizer.getVirtualItems().map((v) => (
+            <RowView
+              key={rows[v.index].id}
+              row={rows[v.index]}
+              selected={rows[v.index].id === selectedId}
+              index={v.index}
+              start={v.start}
+              size={v.size}
+              onSelect={onRowClick}
+            />
+          ))}
         </div>
       </div>
 
