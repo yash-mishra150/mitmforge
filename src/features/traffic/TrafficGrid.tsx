@@ -145,6 +145,12 @@ export function TrafficGrid() {
   const trustCa = () => {
     void call(commands.proxyInstallCa())
       .then((msg) => setMessage(msg))
+      // First-run flow completes here: trusted CA → capture turns on itself.
+      .then(() => call(commands.proxySetSystem(true)))
+      .then(() => {
+        setMessage("Certificate trusted — system capture on");
+        refreshStatus();
+      })
       .catch((e) => setMessage(String(e)));
   };
 
