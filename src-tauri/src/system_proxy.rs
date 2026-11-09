@@ -13,7 +13,7 @@ mod imp {
 
     /// The proxy settings that existed before we enabled ours, and whether we
     /// are the ones who enabled it (restored on app exit).
-    static SAVED: Mutex<Option<(u32, Option<String>)>> = Mutex::new(None);
+    static SAVED: Mutex<Option<(u32, Option<String>, Option<String>)>> = Mutex::new(None);
 
     fn open() -> Result<winreg::RegKey, String> {
         let hkcu = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
@@ -51,13 +51,31 @@ mod imp {
         let mut saved = SAVED.lock().unwrap();
         if saved.is_none() {
             let prev_enable = key.get_value::<u32, _>("ProxyEnable").unwrap_or(0);
-            let prev_server = key.get_value("ProxyServer").ok();
-            *saved = Some((prev_enable, prev_server));
+            let prev_server = key.get_value::<String, _>("ProxyServer").ok();
+            let prev_override = key.get_value::<String, _>("ProxyOverride").ok();
+            *saved = Some((prev_enable, prev_server.clone(), prev_override));
         }
         key.set_value("ProxyEnable", &1u32)
             .map_err(|e| format!("set ProxyEnable: {e}"))?;
         key.set_value("ProxyServer", &server.to_string())
             .map_err(|e| format!("set ProxyServer: {e}"))?;
+        // Keep local traffic out of the proxy: an empty bypass list routes
+        // even localhost dev servers (including our own webview) through us.
+        let prev_override = SAVED.lock().unwrap().as_ref().and_then(|s| s.2.clone());
+        let mut entries: Vec<String> = prev_override
+            .unwrap_or_default()
+            .split(';')
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(String::from)
+            .collect();
+        for bypass in ["localhost", "127.0.0.1", "<local>"] {
+            if !entries.iter().any(|e| e.eq_ignore_ascii_case(bypass)) {
+                entries.push(bypass.to_string());
+            }
+        }
+        key.set_value("ProxyOverride", &entries.join(";"))
+            .map_err(|e| format!("set ProxyOverride: {e}"))?;
         drop(saved);
         refresh();
         Ok(())
@@ -75,20 +93,21 @@ mod imp {
     /// still pointing at us. Called on app exit.
     pub fn restore_on_exit() {
         let mut saved = SAVED.lock().unwrap();
-        let Some((prev_enable, prev_server)) = saved.take() else {
+        let Some((prev_enable, prev_server, prev_override)) = saved.take() else {
             return;
         };
         let Ok(key) = open() else { return };
         // Only restore if the registry still holds our server; the user may
         // have changed the proxy themselves meanwhile.
-        if prev_server.is_some()
-            && key.get_value::<String, _>("ProxyServer").ok().as_deref() != Some("127.0.0.1:8080")
-        {
+        if key.get_value::<String, _>("ProxyServer").ok().as_deref() != Some("127.0.0.1:8080") {
             return;
         }
         let _ = key.set_value("ProxyEnable", &prev_enable);
         if let Some(server) = prev_server {
             let _ = key.set_value("ProxyServer", &server);
+        }
+        if let Some(override_list) = prev_override {
+            let _ = key.set_value("ProxyOverride", &override_list);
         }
         drop(saved);
         refresh();

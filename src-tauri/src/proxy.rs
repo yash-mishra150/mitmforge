@@ -11,7 +11,7 @@ use hudsucker::{
     certificate_authority::RcgenAuthority,
     futures::StreamExt,
     hyper::{Request, Response, StatusCode},
-    rcgen::{BasicConstraints, CertificateParams, DnType, IsCa, Issuer, KeyPair},
+    rcgen::{BasicConstraints, CertificateParams, DnType, IsCa, Issuer, KeyPair, KeyUsagePurpose},
     rustls::crypto::aws_lc_rs,
 };
 use serde::{Deserialize, Serialize};
@@ -401,6 +401,13 @@ fn fresh_ca(cer_path: Option<&Path>) -> Result<Issuer<'static, KeyPair>, String>
     params
         .distinguished_name
         .push(DnType::CommonName, "MitmForge Root CA");
+    // Windows rejects CA chains without keyCertSign (schannel enforces key
+    // usage); rcgen leaves key_usages empty by default.
+    params.key_usages = vec![
+        KeyUsagePurpose::DigitalSignature,
+        KeyUsagePurpose::KeyCertSign,
+        KeyUsagePurpose::CrlSign,
+    ];
     let cert = params
         .self_signed(&key_pair)
         .map_err(|e| format!("self-signed CA: {e}"))?;
