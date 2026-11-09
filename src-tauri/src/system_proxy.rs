@@ -13,7 +13,8 @@ mod imp {
 
     /// The proxy settings that existed before we enabled ours, and whether we
     /// are the ones who enabled it (restored on app exit).
-    static SAVED: Mutex<Option<(u32, Option<String>, Option<String>)>> = Mutex::new(None);
+    type SavedSettings = (u32, Option<String>, Option<String>);
+    static SAVED: Mutex<Option<SavedSettings>> = Mutex::new(None);
 
     fn open() -> Result<winreg::RegKey, String> {
         let hkcu = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
