@@ -112,6 +112,7 @@ pub async fn proxy_install_ca(app: AppHandle) -> Result<String, ProxyError> {
             message: e.to_string(),
         })?;
     if out.status.success() {
+        crate::system_proxy::mark_ca_installed();
         Ok("Certificate added to the user Root store. Restart the browser once, then HTTPS shows decrypted.".into())
     } else {
         Err(ProxyError::Internal {
