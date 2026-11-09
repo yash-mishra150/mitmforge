@@ -30,7 +30,13 @@ async fn logs_plain_http_exchange() {
 
     let addr: SocketAddr = "127.0.0.1:18080".parse().unwrap();
     let store = proxy::BodyStore::shared();
-    tokio::spawn(proxy::start(sink, addr, None, store.clone()));
+    tokio::spawn(proxy::start(
+        sink,
+        addr,
+        None,
+        store.clone(),
+        std::future::pending(),
+    ));
     // Poll until the proxy accepts connections.
     let mut stream = loop {
         match tokio::net::TcpStream::connect(addr).await {

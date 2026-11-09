@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::{
     collections::{HashMap, VecDeque},
+    future::Future,
     net::SocketAddr,
     path::Path,
     sync::{
@@ -446,13 +447,14 @@ fn fresh_ca(cer_path: Option<&Path>) -> Result<Issuer<'static, KeyPair>, String>
     Ok(Issuer::new(params, key_pair))
 }
 
-/// Generates/loads the CA and starts the proxy on `addr`. Runs until the app
-/// exits; `sink` receives one event per exchange.
+/// Generates/loads the CA and starts the proxy on `addr`. Runs until
+/// `shutdown` resolves; `sink` receives one event per exchange.
 pub async fn start(
     sink: Sink,
     addr: SocketAddr,
     ca_dir: Option<&Path>,
     store: SharedStore,
+    shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> Result<(), String> {
     let issuer = load_or_create_ca(ca_dir)?;
     let ca = RcgenAuthority::new(issuer, 1_000, aws_lc_rs::default_provider());
@@ -468,7 +470,7 @@ pub async fn start(
             store,
             pending: VecDeque::new(),
         })
-        .with_graceful_shutdown(std::future::pending::<()>())
+        .with_graceful_shutdown(shutdown)
         .build()
         .map_err(|e| format!("build proxy: {e}"))?;
 
