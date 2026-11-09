@@ -43,6 +43,14 @@ pub fn run() {
 
     let typed_invoke = builder.invoke_handler();
     let app = tauri::Builder::default()
+        // Must be the first plugin: a second launch focuses this instance
+        // instead of spawning a competitor for port 8080.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            use tauri::Manager;
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_opener::init())
         .manage(proxy::BodyStore::shared())
         .invoke_handler(typed_invoke)
