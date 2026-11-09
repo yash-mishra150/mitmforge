@@ -50,17 +50,21 @@ pub async fn proxy_start(
     });
     let store = store.inner().clone();
     tauri::async_runtime::spawn(async move {
+        // Readiness gate: only point the system proxy at a proxy that is
+        // actually about to listen. (A previous instance holding the port
+        // would otherwise route traffic into an invisible/dead process.)
+        let port_free = std::net::TcpListener::bind(addr).is_ok();
+        if crate::system_proxy::ca_trusted() {
+            if port_free && let Err(e) = crate::system_proxy::enable("127.0.0.1:8080") {
+                eprintln!("system proxy auto-enable failed: {e}");
+            }
+        } else if !port_free {
+            eprintln!("port 8080 is held by another process; system proxy not enabled");
+        }
         if let Err(e) = crate::proxy::start(sink, addr, Some(&ca_dir), store).await {
             eprintln!("proxy engine stopped: {e}");
         }
     });
-
-    // Auto-capture, Proxyman-style — but only into a working setup.
-    if crate::system_proxy::ca_trusted()
-        && let Err(e) = crate::system_proxy::enable("127.0.0.1:8080")
-    {
-        eprintln!("system proxy auto-enable failed: {e}");
-    }
     Ok(())
 }
 
