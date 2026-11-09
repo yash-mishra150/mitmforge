@@ -25,9 +25,9 @@ export const commands = {
 	proxyInstallCa: () => typedError<string, ProxyError>(__TAURI_INVOKE("proxy_install_ca")),
 	/**
 	 *  Toggles Windows system-wide proxy capture (what Proxyman's "Capture System
-	 *  Traffic" does). Previous settings are restored when the app exits.
-	 *  Refused until the CA is trusted: with an untrusted CA, enabling only
-	 *  breaks every HTTPS site instead of capturing anything.
+	 *  Traffic" does). Previous settings are restored when the app exits. Safe
+	 *  without a trusted CA: HTTPS is blind-tunneled until the CA is installed,
+	 *  so nothing breaks.
 	 */
 	proxySetSystem: (enabled: boolean) => typedError<null, ProxyError>(__TAURI_INVOKE("proxy_set_system", { enabled })),
 	/**
