@@ -22,16 +22,28 @@ mod imp {
             .map_err(|e| format!("open Internet Settings: {e}"))
     }
 
-    /// True when our Root CA is present in the user store. shortcut: matches
-    /// the subject name via `certutil`, not the exact certificate bytes.
+    /// True when our Root CA is present in the user store. Checked once per
+    /// launch and cached (certutil costs ~200ms); `mark_ca_installed` updates
+    /// the cache when Trust CA succeeds. shortcut: uninstalling the CA by hand
+    /// is only noticed on the next app launch.
+    static CA_TRUSTED: Mutex<Option<bool>> = Mutex::new(None);
+
     pub fn ca_trusted() -> bool {
-        let Ok(out) = std::process::Command::new("certutil")
+        let mut cached = CA_TRUSTED.lock().unwrap();
+        if let Some(trusted) = *cached {
+            return trusted;
+        }
+        let trusted = std::process::Command::new("certutil")
             .args(["-user", "-store", "Root"])
             .output()
-        else {
-            return false;
-        };
-        String::from_utf8_lossy(&out.stdout).contains("MitmForge Root CA")
+            .map(|out| String::from_utf8_lossy(&out.stdout).contains("MitmForge Root CA"))
+            .unwrap_or(false);
+        *cached = Some(trusted);
+        trusted
+    }
+
+    pub fn mark_ca_installed() {
+        *CA_TRUSTED.lock().unwrap() = Some(true);
     }
 
     fn refresh() {
@@ -135,6 +147,7 @@ mod imp {
     pub fn ca_trusted() -> bool {
         false
     }
+    pub fn mark_ca_installed() {}
     pub fn enable(_server: &str) -> Result<(), String> {
         Err("system proxy control is Windows-only for now".into())
     }
