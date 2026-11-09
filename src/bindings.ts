@@ -10,8 +10,11 @@ export const commands = {
 	/**
 	 *  Starts the proxy engine once; traffic streams to the UI as `ProxyEvent`s.
 	 *  Called from the frontend *after* the event listener is attached, so early
-	 *  traffic is not lost. shortcut: if the engine dies, restarting needs an app
-	 *  relaunch (STARTED never resets); a lifecycle command set fixes that later.
+	 *  traffic is not lost. Proxyman-style: the system proxy turns on
+	 *  automatically, but only when the CA is trusted and the port is free — we
+	 *  never route traffic into a dead proxy. shortcut: if the engine dies,
+	 *  restarting needs an app relaunch (STARTED never resets); a lifecycle
+	 *  command set fixes that later.
 	 */
 	proxyStart: () => typedError<null, ProxyError>(__TAURI_INVOKE("proxy_start")),
 	proxyStatus: () => __TAURI_INVOKE<ProxyStatus_Serialize>("proxy_status"),
