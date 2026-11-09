@@ -26,6 +26,8 @@ export const commands = {
 	/**
 	 *  Toggles Windows system-wide proxy capture (what Proxyman's "Capture System
 	 *  Traffic" does). Previous settings are restored when the app exits.
+	 *  Refused until the CA is trusted: with an untrusted CA, enabling only
+	 *  breaks every HTTPS site instead of capturing anything.
 	 */
 	proxySetSystem: (enabled: boolean) => typedError<null, ProxyError>(__TAURI_INVOKE("proxy_set_system", { enabled })),
 	/**
@@ -80,6 +82,11 @@ export type ProxyStatus_Deserialize = {
 	listening: boolean,
 	/**  Windows system proxy on/off (`None` if it cannot be read). */
 	system_proxy?: boolean | null,
+	/**
+	 *  Our CA is in the trust store; required before system proxy is offered,
+	 *  otherwise enabling it only breaks every HTTPS site.
+	 */
+	ca_trusted: boolean,
 };
 
 /**  What the header pills show. */
@@ -88,6 +95,11 @@ export type ProxyStatus_Serialize = {
 	listening: boolean,
 	/**  Windows system proxy on/off (`None` if it cannot be read). */
 	system_proxy: boolean | null,
+	/**
+	 *  Our CA is in the trust store; required before system proxy is offered,
+	 *  otherwise enabling it only breaks every HTTPS site.
+	 */
+	ca_trusted: boolean,
 };
 
 /**  One intercepted exchange. `Response` events patch the row by `id`. */

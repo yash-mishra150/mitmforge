@@ -176,7 +176,9 @@ export function TrafficGrid() {
           <button
             type="button"
             onClick={toggleSystem}
-            className={`flex items-center gap-1 rounded px-2 py-1 ${systemOn ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125`}
+            disabled={status !== null && !status.ca_trusted}
+            title={status?.ca_trusted === false ? "Trust the certificate first" : undefined}
+            className={`flex items-center gap-1 rounded px-2 py-1 disabled:cursor-not-allowed disabled:opacity-40 ${systemOn ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125`}
           >
             {systemOn ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
             System proxy {systemOn ? "on" : "off"}
@@ -184,10 +186,12 @@ export function TrafficGrid() {
           <button
             type="button"
             onClick={trustCa}
-            className="flex items-center gap-1 rounded bg-neutral-800 px-2 py-1 text-neutral-400 hover:brightness-125"
+            disabled={status?.ca_trusted === true}
+            title={status?.ca_trusted ? "Certificate already trusted" : undefined}
+            className={`flex items-center gap-1 rounded px-2 py-1 ${status?.ca_trusted ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125 disabled:hover:brightness-100`}
           >
             <ShieldCheck size={14} />
-            Trust CA
+            {status?.ca_trusted ? "CA trusted" : "Trust CA"}
           </button>
           <span className="text-neutral-500">{rows.length} req</span>
           <button
