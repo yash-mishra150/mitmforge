@@ -62,8 +62,14 @@ pub fn run() {
         .expect("error while building tauri application");
 
     app.run(|_app, event| {
-        if let tauri::RunEvent::Exit = event {
-            // Put the system proxy back the way we found it (if we set it).
+        if matches!(
+            event,
+            tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit
+        ) {
+            // Stop the engine and put the system proxy back the way we found
+            // it BEFORE the runtime teardown (which would otherwise wait on
+            // the engine task forever and get killed, skipping the restore).
+            commands::proxy::shutdown_engine();
             system_proxy::restore_on_exit();
         }
     });

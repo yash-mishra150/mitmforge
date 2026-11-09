@@ -78,7 +78,15 @@ mod imp {
             let prev_enable = key.get_value::<u32, _>("ProxyEnable").unwrap_or(0);
             let prev_server = key.get_value::<String, _>("ProxyServer").ok();
             let prev_override = key.get_value::<String, _>("ProxyOverride").ok();
-            *saved = Some((prev_enable, prev_server.clone(), prev_override));
+            // A previous session that crashed while capturing leaves our own
+            // proxy in the registry; that is not a real prior state — treat
+            // it as "off" so closing the app always un-breaks browsing.
+            let prev_is_ours = prev_enable != 0 && prev_server.as_deref() == Some("127.0.0.1:8080");
+            *saved = if prev_is_ours {
+                Some((0, None, prev_override))
+            } else {
+                Some((prev_enable, prev_server, prev_override))
+            };
         }
         key.set_value("ProxyEnable", &1u32)
             .map_err(|e| format!("set ProxyEnable: {e}"))?;

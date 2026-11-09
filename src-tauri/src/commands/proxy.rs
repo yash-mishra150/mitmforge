@@ -4,12 +4,33 @@ use crate::{PROXY_EVENT, ProxyError};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::sync::{
-    Arc,
+    Arc, Mutex, OnceLock,
     atomic::{AtomicBool, Ordering},
 };
 use tauri::{AppHandle, Emitter, Manager, State};
 
 static STARTED: AtomicBool = AtomicBool::new(false);
+/// Signals the engine's graceful shutdown on app exit.
+static SHUTDOWN: OnceLock<tokio::sync::watch::Sender<bool>> = OnceLock::new();
+/// The engine task, so exit can wait for a clean stop.
+static ENGINE_TASK: Mutex<Option<tauri::async_runtime::JoinHandle<()>>> = Mutex::new(None);
+
+/// Signals the engine to stop (idempotent); called on app exit.
+pub fn signal_shutdown() {
+    if let Some(sender) = SHUTDOWN.get() {
+        let _ = sender.send(true);
+    }
+}
+
+/// Stops the engine and waits (bounded) for a clean exit; called on app exit.
+pub fn shutdown_engine() {
+    signal_shutdown();
+    if let Some(handle) = ENGINE_TASK.lock().unwrap().take() {
+        let _ = tauri::async_runtime::block_on(async {
+            tokio::time::timeout(std::time::Duration::from_secs(3), handle).await
+        });
+    }
+}
 
 /// Starts the proxy engine once; traffic streams to the UI as `ProxyEvent`s.
 /// Called from the frontend *after* the event listener is attached, so early
@@ -51,7 +72,9 @@ pub async fn proxy_start(
         }
     });
     let store = store.inner().clone();
-    tauri::async_runtime::spawn(async move {
+    let (shutdown_tx, mut shutdown_rx) = tokio::sync::watch::channel(false);
+    let _ = SHUTDOWN.set(shutdown_tx);
+    let handle = tauri::async_runtime::spawn(async move {
         // Readiness gate: only point the system proxy at a proxy that is
         // actually about to listen. (A previous instance holding the port
         // would otherwise route traffic into an invisible/dead process.)
@@ -61,10 +84,14 @@ pub async fn proxy_start(
         } else if !port_free {
             eprintln!("port 8080 is held by another process; system proxy not enabled");
         }
-        if let Err(e) = crate::proxy::start(sink, addr, Some(&ca_dir), store).await {
+        let shutdown = async move {
+            let _ = shutdown_rx.changed().await;
+        };
+        if let Err(e) = crate::proxy::start(sink, addr, Some(&ca_dir), store, shutdown).await {
             eprintln!("proxy engine stopped: {e}");
         }
     });
+    *ENGINE_TASK.lock().unwrap() = Some(handle);
     Ok(())
 }
 
