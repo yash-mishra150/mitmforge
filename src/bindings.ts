@@ -68,10 +68,18 @@ export type ProxyError = "AlreadyRunning" | ({ Io: {
 export type ProxyEvent = ProxyEvent_Serialize | ProxyEvent_Deserialize;
 
 /**  Backend → UI events. Serialized as a tagged enum (`type` field). */
-export type ProxyEvent_Deserialize = { type: "request"; entry: TrafficEntry } | { type: "response"; id: number; status: number; durationMs?: number | null };
+export type ProxyEvent_Deserialize = { type: "request"; entry: TrafficEntry_Deserialize } | { type: "response"; id: number; status: number; durationMs?: number | null; 
+/**  From the response's content-type header, if present. */
+resContentType?: string | null; 
+/**  From the response's content-length header, if present. */
+resSize?: number | null };
 
 /**  Backend → UI events. Serialized as a tagged enum (`type` field). */
-export type ProxyEvent_Serialize = { type: "request"; entry: TrafficEntry } | { type: "response"; id: number; status: number; durationMs: number | null };
+export type ProxyEvent_Serialize = { type: "request"; entry: TrafficEntry_Serialize } | { type: "response"; id: number; status: number; durationMs: number | null; 
+/**  From the response's content-type header, if present. */
+resContentType: string | null; 
+/**  From the response's content-length header, if present. */
+resSize: number | null };
 
 /**  What the header pills show. */
 export type ProxyStatus = ProxyStatus_Serialize | ProxyStatus_Deserialize;
@@ -103,11 +111,34 @@ export type ProxyStatus_Serialize = {
 };
 
 /**  One intercepted exchange. `Response` events patch the row by `id`. */
-export type TrafficEntry = {
+export type TrafficEntry = TrafficEntry_Serialize | TrafficEntry_Deserialize;
+
+/**  One intercepted exchange. `Response` events patch the row by `id`. */
+export type TrafficEntry_Deserialize = {
 	id: number,
 	method: string,
 	url: string,
 	started_at_ms: number,
+	/**  "tunnel" for CONNECT rows, otherwise the URI scheme ("http"/"https"). */
+	scheme: string,
+	/**  From the request's content-type header, if present. */
+	req_content_type?: string | null,
+	/**  From the request's content-length header, if present. */
+	req_size?: number | null,
+};
+
+/**  One intercepted exchange. `Response` events patch the row by `id`. */
+export type TrafficEntry_Serialize = {
+	id: number,
+	method: string,
+	url: string,
+	started_at_ms: number,
+	/**  "tunnel" for CONNECT rows, otherwise the URI scheme ("http"/"https"). */
+	scheme: string,
+	/**  From the request's content-type header, if present. */
+	req_content_type: string | null,
+	/**  From the request's content-length header, if present. */
+	req_size: number | null,
 };
 
 /* Tauri Specta runtime */

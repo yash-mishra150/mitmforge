@@ -1,19 +1,27 @@
 import { create } from "zustand";
-import type { TrafficEntry } from "../../bindings";
+import type { TrafficEntry, TrafficEntry_Deserialize } from "../../bindings";
 
 // Memory guard; BRD targets 50k rows — raise once the grid proves out.
 export const MAX_ROWS = 10_000;
 
-export interface TrafficRow extends TrafficEntry {
+export type TrafficRow = TrafficEntry_Deserialize & {
   status: number | null;
   durationMs: number | null;
-}
+  resContentType: string | null;
+  resSize: number | null;
+};
 
 interface TrafficState {
   rows: TrafficRow[];
   selectedId: number | null;
   addRequest: (entry: TrafficEntry) => void;
-  addResponse: (id: number, status: number, durationMs: number | null) => void;
+  addResponse: (
+    id: number,
+    status: number,
+    durationMs: number | null,
+    resContentType?: string | null,
+    resSize?: number | null,
+  ) => void;
   select: (id: number | null) => void;
   clear: () => void;
 }
@@ -21,7 +29,7 @@ interface TrafficState {
 // Coalesce bursts of backend events into one store update per tick, so the
 // grid re-renders at most ~20x/sec no matter how hard background apps churn.
 const pendingRequests: TrafficEntry[] = [];
-const pendingResponses: Array<[number, number, number | null]> = [];
+const pendingResponses: Array<[number, number, number | null, string | null, number | null]> = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 
 function schedule(set: (fn: (s: TrafficState) => Partial<TrafficState>) => void) {
@@ -34,13 +42,22 @@ function schedule(set: (fn: (s: TrafficState) => Partial<TrafficState>) => void)
     set((s) => {
       let rows = s.rows;
       for (const entry of requests) {
-        rows = [{ ...entry, status: null, durationMs: null }, ...rows];
+        rows = [
+          { ...entry, status: null, durationMs: null, resContentType: null, resSize: null },
+          ...rows,
+        ];
       }
       if (rows.length > MAX_ROWS) rows = rows.slice(0, MAX_ROWS);
-      for (const [id, status, durationMs] of responses) {
+      for (const [
+        id,
+        status,
+        durationMs,
+        resContentType,
+        resSize,
+      ] of responses) {
         const i = rows.findIndex((r) => r.id === id);
         if (i >= 0) {
-          const patched = { ...rows[i], status, durationMs };
+          const patched = { ...rows[i], status, durationMs, resContentType, resSize };
           rows = rows.slice();
           rows[i] = patched;
         }
@@ -57,8 +74,14 @@ export const useTraffic = create<TrafficState>((set) => ({
     pendingRequests.push(entry);
     schedule(set);
   },
-  addResponse: (id, status, durationMs) => {
-    pendingResponses.push([id, status, durationMs]);
+  addResponse: (
+    id,
+    status,
+    durationMs,
+    resContentType: string | null = null,
+    resSize: number | null = null,
+  ) => {
+    pendingResponses.push([id, status, durationMs, resContentType, resSize]);
     schedule(set);
   },
   select: (id) => set({ selectedId: id }),
