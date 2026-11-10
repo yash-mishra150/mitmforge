@@ -44,4 +44,4 @@ First launch: click **Trust CA** (installs the root certificate into your user s
 
 ## License
 
-TBD before first public release.
+MIT — see [LICENSE](LICENSE).
