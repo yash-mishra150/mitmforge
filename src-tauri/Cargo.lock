@@ -2408,6 +2408,7 @@ dependencies = [
  "thiserror 2.0.21",
  "tokio",
  "winapi",
+ "windows-sys 0.52.0",
  "winreg",
 ]
 

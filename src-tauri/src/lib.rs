@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
+pub mod client;
 mod commands;
 pub mod proxy;
 pub mod system_proxy;

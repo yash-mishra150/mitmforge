@@ -15,6 +15,8 @@ pub fn builder() -> tauri_specta::Builder<tauri::Wry> {
             proxy::proxy_install_ca,
             proxy::proxy_set_system,
             proxy::traffic_body,
+            proxy::traffic_recording,
+            proxy::traffic_autosave,
         ])
         .typ::<ProxyEvent>()
         .dangerously_cast_bigints_to_number()

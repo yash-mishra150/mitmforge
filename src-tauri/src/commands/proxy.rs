@@ -2,14 +2,22 @@
 
 use crate::{PROXY_EVENT, ProxyError};
 use serde::{Deserialize, Serialize};
+use serde_json;
 use specta::Type;
-use std::sync::{
-    Arc, Mutex, OnceLock,
-    atomic::{AtomicBool, Ordering},
+use std::{
+    io::Write,
+    sync::{
+        Arc, Mutex, OnceLock,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 use tauri::{AppHandle, Emitter, Manager, State};
 
 static STARTED: AtomicBool = AtomicBool::new(false);
+/// Autosave master switch. When on, every ProxyEvent is appended as one JSON
+/// line to <Documents>/MitmForge/traffic-log.jsonl for the process lifetime.
+static AUTO_SAVE: AtomicBool = AtomicBool::new(true);
+static AUTO_SAVE_FILE: Mutex<Option<std::fs::File>> = Mutex::new(None);
 /// Signals the engine's graceful shutdown on app exit.
 static SHUTDOWN: OnceLock<tokio::sync::watch::Sender<bool>> = OnceLock::new();
 /// The engine task, so exit can wait for a clean stop.
@@ -65,10 +73,29 @@ pub async fn proxy_start(
         })?;
     // Decrypt only what we can; everything else passes through untouched.
     crate::proxy::set_intercept_tls(crate::system_proxy::ca_trusted());
+    // Open (create) the append-only JSONL traffic log for the process lifetime.
+    if let Ok(documents) = app.path().document_dir() {
+        let log_dir = documents.join("MitmForge");
+        if std::fs::create_dir_all(&log_dir).is_ok()
+            && let Ok(file) = std::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(log_dir.join("traffic-log.jsonl"))
+        {
+            *AUTO_SAVE_FILE.lock().unwrap() = Some(file);
+        }
+    }
     let sink_app = app.clone();
     let sink: Arc<dyn Fn(crate::proxy::ProxyEvent) + Send + Sync> = Arc::new(move |event| {
         if let Err(e) = sink_app.emit(PROXY_EVENT, &event) {
             eprintln!("emit proxy event failed: {e}");
+        }
+        if AUTO_SAVE.load(Ordering::SeqCst)
+            && let Ok(mut guard) = AUTO_SAVE_FILE.lock()
+            && let Some(ref mut file) = *guard
+            && let Ok(line) = serde_json::to_string(&event)
+        {
+            let _ = writeln!(file, "{line}");
         }
     });
     let store = store.inner().clone();
@@ -87,7 +114,8 @@ pub async fn proxy_start(
         let shutdown = async move {
             let _ = shutdown_rx.changed().await;
         };
-        if let Err(e) = crate::proxy::start(sink, addr, Some(&ca_dir), store, shutdown).await {
+        if let Err(e) = crate::proxy::start(sink, addr, addr, Some(&ca_dir), store, shutdown).await
+        {
             eprintln!("proxy engine stopped: {e}");
         }
     });
@@ -182,4 +210,21 @@ pub fn traffic_body(
     id: u64,
 ) -> Option<crate::proxy::BodyText> {
     store.lock().unwrap().get(id)
+}
+
+/// Master switch for engine emission and body capture (pause/resume
+/// recording without dropping the pending correlation queue).
+#[tauri::command]
+#[specta::specta]
+pub fn traffic_recording(enabled: bool) -> bool {
+    crate::proxy::set_recording(enabled);
+    true
+}
+
+/// Master switch for appending traffic events to traffic-log.jsonl.
+#[tauri::command]
+#[specta::specta]
+pub fn traffic_autosave(enabled: bool) -> bool {
+    AUTO_SAVE.store(enabled, Ordering::SeqCst);
+    true
 }
