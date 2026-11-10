@@ -59,6 +59,12 @@ async fn logs_plain_http_exchange() {
         _ => None,
     });
     let request = request.expect("Request event for /hello");
+    assert_eq!(request.scheme, "http");
+    assert!(
+        request.req_content_type.is_none(),
+        "GET has no content-type"
+    );
+    assert!(request.req_size.is_none(), "GET has no content-length");
     let response = got
         .iter()
         .find_map(|e| match e {
@@ -66,12 +72,18 @@ async fn logs_plain_http_exchange() {
                 id,
                 status,
                 duration_ms,
-            } if *id == request.id => Some((*status, *duration_ms)),
+                res_content_type,
+                res_size,
+            } if *id == request.id => {
+                Some((*status, *duration_ms, res_content_type.clone(), *res_size))
+            }
             _ => None,
         })
         .expect("Response event matching the request id");
     assert_eq!(response.0, 200);
     assert!(response.1.is_some(), "duration is measured");
+    assert!(response.2.is_none(), "upstream sends no content-type");
+    assert_eq!(response.3, Some(13), "content-length 13");
 
     // Bodies are captured and fetched lazily, together with headers.
     let bodies = store

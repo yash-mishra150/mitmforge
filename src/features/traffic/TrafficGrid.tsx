@@ -98,7 +98,7 @@ const RowView = memo(function RowView({
         height: size,
         transform: `translateY(${start}px)`,
       }}
-      className={`grid cursor-pointer grid-cols-[3rem_4.5rem_3.5rem_4rem_1fr_5.5rem] items-center gap-x-3 border-b border-neutral-800/50 px-3 ${selected ? "bg-neutral-800" : "hover:bg-neutral-800/50"}`}
+      className={`grid cursor-pointer grid-cols-[3rem_4.5rem_3.5rem_4rem_1fr_5.5rem_3rem] items-center gap-x-3 border-b border-neutral-800/50 px-3 ${selected ? "bg-neutral-800" : "hover:bg-neutral-800/50"}`}
       data-index={index}
     >
       <span className="text-neutral-600">{row.id}</span>
@@ -110,6 +110,7 @@ const RowView = memo(function RowView({
         <span className="text-neutral-300">{path}</span>
       </span>
       <span className="text-neutral-600">{time(row.started_at_ms)}</span>
+      <span className="text-neutral-600">{row.scheme === "https" ? "SSL" : "–"}</span>
     </div>
   );
 });
@@ -209,13 +210,14 @@ export function TrafficGrid() {
         </span>
       </header>
 
-      <div className="grid grid-cols-[3rem_4.5rem_3.5rem_4rem_1fr_5.5rem] gap-x-3 border-b border-neutral-800 px-3 py-1 text-xs tracking-wide text-neutral-500 uppercase">
+      <div className="grid grid-cols-[3rem_4.5rem_3.5rem_4rem_1fr_5.5rem_3rem] gap-x-3 border-b border-neutral-800 px-3 py-1 text-xs tracking-wide text-neutral-500 uppercase">
         <span>#</span>
         <span>Method</span>
         <span>Status</span>
         <span>ms</span>
         <span>URL</span>
         <span>Time</span>
+        <span>SSL</span>
       </div>
 
       <div ref={parentRef} className="min-h-0 flex-1 overflow-auto font-mono text-xs">

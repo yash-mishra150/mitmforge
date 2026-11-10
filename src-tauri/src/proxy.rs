@@ -10,7 +10,7 @@ use hudsucker::{
     Body, HttpContext, HttpHandler, Proxy, RequestOrResponse,
     certificate_authority::RcgenAuthority,
     futures::StreamExt,
-    hyper::{Request, Response, StatusCode},
+    hyper::{Request, Response, StatusCode, header},
     rcgen::{BasicConstraints, CertificateParams, DnType, IsCa, Issuer, KeyPair, KeyUsagePurpose},
     rustls::crypto::aws_lc_rs,
 };
@@ -41,6 +41,12 @@ pub struct TrafficEntry {
     pub method: String,
     pub url: String,
     pub started_at_ms: u64,
+    /// "tunnel" for CONNECT rows, otherwise the URI scheme ("http"/"https").
+    pub scheme: String,
+    /// From the request's content-type header, if present.
+    pub req_content_type: Option<String>,
+    /// From the request's content-length header, if present.
+    pub req_size: Option<u64>,
 }
 
 /// Backend → UI events. Serialized as a tagged enum (`type` field).
@@ -58,6 +64,10 @@ pub enum ProxyEvent {
         id: u64,
         status: u16,
         duration_ms: Option<u64>,
+        /// From the response's content-type header, if present.
+        res_content_type: Option<String>,
+        /// From the response's content-length header, if present.
+        res_size: Option<u64>,
     },
 }
 
@@ -260,11 +270,33 @@ impl HttpHandler for EmitHandler {
         req: Request<Body>,
     ) -> RequestOrResponse {
         let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
+        let method = req.method().to_string();
+        let url = req.uri().to_string();
+        // CONNECT tunnels carry an authority-form URI (no scheme); label them
+        // "tunnel" so the UI can build an SSL column off `scheme`.
+        let scheme = if method == "CONNECT" {
+            "tunnel".to_string()
+        } else {
+            req.uri().scheme_str().unwrap_or("").to_string()
+        };
+        let req_content_type = req
+            .headers()
+            .get(header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_owned);
+        let req_size = req
+            .headers()
+            .get(header::CONTENT_LENGTH)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse::<u64>().ok());
         let entry = TrafficEntry {
             id,
-            method: req.method().to_string(),
-            url: req.uri().to_string(),
+            method,
+            url,
             started_at_ms: now_ms(),
+            scheme,
+            req_content_type,
+            req_size,
         };
         // CONNECT tunnel: logged like Proxyman (with headers); we intercept,
         // so it answers 200 and the decrypted requests follow as their own
@@ -280,6 +312,8 @@ impl HttpHandler for EmitHandler {
                 id,
                 status: 200,
                 duration_ms: None,
+                res_content_type: None,
+                res_size: None,
             });
             return RequestOrResponse::Request(req);
         }
@@ -347,6 +381,18 @@ impl HttpHandler for EmitHandler {
         };
 
         let res_headers = headers_text(res.headers());
+        // Capture from the real headers before consuming the response into
+        // parts / teeing the body, so values reflect what the upstream sent.
+        let res_content_type = res
+            .headers()
+            .get(header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_owned);
+        let res_size = res
+            .headers()
+            .get(header::CONTENT_LENGTH)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse::<u64>().ok());
         let (parts, body) = res.into_parts();
         let res_capture: Arc<Mutex<Vec<u8>>> = Arc::default();
         let body = tee(body, res_capture.clone());
@@ -363,6 +409,8 @@ impl HttpHandler for EmitHandler {
             id: pending.map(|p| p.id).unwrap_or(0),
             status,
             duration_ms,
+            res_content_type,
+            res_size,
         });
         Response::from_parts(parts, body)
     }
@@ -387,6 +435,8 @@ impl HttpHandler for EmitHandler {
             id: pending.map(|p| p.id).unwrap_or(0),
             status: 502,
             duration_ms,
+            res_content_type: None,
+            res_size: None,
         });
         Response::builder()
             .status(StatusCode::BAD_GATEWAY)
