@@ -98,7 +98,7 @@ const RowView = memo(function RowView({
         height: size,
         transform: `translateY(${start}px)`,
       }}
-      className={`grid cursor-pointer grid-cols-[3rem_4.5rem_3.5rem_4rem_1fr_5.5rem] items-center gap-x-3 border-b border-neutral-800/50 px-3 ${selected ? "bg-neutral-800" : "hover:bg-neutral-800/50"}`}
+      className={`grid cursor-pointer grid-cols-[3rem_4.5rem_3.5rem_4rem_1fr_5.5rem_3rem_5rem] items-center gap-x-3 border-b border-neutral-800/50 px-3 ${selected ? "bg-neutral-800" : "hover:bg-neutral-800/50"}`}
       data-index={index}
     >
       <span className="text-neutral-600">{row.id}</span>
@@ -110,6 +110,8 @@ const RowView = memo(function RowView({
         <span className="text-neutral-300">{path}</span>
       </span>
       <span className="text-neutral-600">{time(row.started_at_ms)}</span>
+      <span className="text-neutral-600">{row.scheme === "https" ? "SSL" : "–"}</span>
+      <span className="text-neutral-500 truncate">{row.client ?? "—"}</span>
     </div>
   );
 });
@@ -121,6 +123,8 @@ export function TrafficGrid() {
   const clear = useTraffic((s) => s.clear);
   const [status, setStatus] = useState<ProxyStatus | null>(null);
   const [message, setMessage] = useState("");
+  const [recording, setRecording] = useState(true);
+  const [autoSave, setAutoSave] = useState(true);
   const parentRef = useRef<HTMLDivElement>(null);
 
   const refreshStatus = () => {
@@ -152,6 +156,18 @@ export function TrafficGrid() {
         refreshStatus();
       })
       .catch((e) => setMessage(String(e)));
+  };
+
+  const toggleRecording = () => {
+    const target = !recording;
+    setRecording(target);
+    void commands.trafficRecording(target).then(() => setMessage(target ? "Recording on" : "Recording paused"));
+  };
+
+  const toggleAutoSave = () => {
+    const target = !autoSave;
+    setAutoSave(target);
+    void commands.trafficAutosave(target).then(() => setMessage(target ? "Auto-save on" : "Auto-save off"));
   };
 
   const virtualizer = useVirtualizer({
@@ -197,6 +213,22 @@ export function TrafficGrid() {
             <ShieldCheck size={14} />
             {status?.ca_trusted ? "CA trusted" : "Trust CA"}
           </button>
+          <button
+            type="button"
+            onClick={toggleRecording}
+            className={`flex items-center gap-1 rounded px-2 py-1 ${recording ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125`}
+          >
+            {recording ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+            {recording ? "Recording on" : "Recording off"}
+          </button>
+          <button
+            type="button"
+            onClick={toggleAutoSave}
+            className={`flex items-center gap-1 rounded px-2 py-1 ${autoSave ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125`}
+          >
+            {autoSave ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+            {autoSave ? "Auto-save on" : "Auto-save off"}
+          </button>
           <span className="text-neutral-500">{rows.length} req</span>
           <button
             type="button"
@@ -209,13 +241,15 @@ export function TrafficGrid() {
         </span>
       </header>
 
-      <div className="grid grid-cols-[3rem_4.5rem_3.5rem_4rem_1fr_5.5rem] gap-x-3 border-b border-neutral-800 px-3 py-1 text-xs tracking-wide text-neutral-500 uppercase">
+      <div className="grid grid-cols-[3rem_4.5rem_3.5rem_4rem_1fr_5.5rem_3rem_5rem] gap-x-3 border-b border-neutral-800 px-3 py-1 text-xs tracking-wide text-neutral-500 uppercase">
         <span>#</span>
         <span>Method</span>
         <span>Status</span>
         <span>ms</span>
         <span>URL</span>
         <span>Time</span>
+        <span>SSL</span>
+        <span>Client</span>
       </div>
 
       <div ref={parentRef} className="min-h-0 flex-1 overflow-auto font-mono text-xs">

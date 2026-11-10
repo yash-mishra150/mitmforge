@@ -10,7 +10,7 @@ use hudsucker::{
     Body, HttpContext, HttpHandler, Proxy, RequestOrResponse,
     certificate_authority::RcgenAuthority,
     futures::StreamExt,
-    hyper::{Request, Response, StatusCode},
+    hyper::{Request, Response, StatusCode, header},
     rcgen::{BasicConstraints, CertificateParams, DnType, IsCa, Issuer, KeyPair, KeyUsagePurpose},
     rustls::crypto::aws_lc_rs,
 };
@@ -41,6 +41,15 @@ pub struct TrafficEntry {
     pub method: String,
     pub url: String,
     pub started_at_ms: u64,
+    /// "tunnel" for CONNECT rows, otherwise the URI scheme ("http"/"https").
+    pub scheme: String,
+    /// From the request's content-type header, if present.
+    pub req_content_type: Option<String>,
+    /// From the request's content-length header, if present.
+    pub req_size: Option<u64>,
+    /// Local process that opened the connection, or None when it cannot be
+    /// resolved (non-Windows, lookup failure, or no matching table row).
+    pub client: Option<String>,
 }
 
 /// Backend → UI events. Serialized as a tagged enum (`type` field).
@@ -58,6 +67,10 @@ pub enum ProxyEvent {
         id: u64,
         status: u16,
         duration_ms: Option<u64>,
+        /// From the response's content-type header, if present.
+        res_content_type: Option<String>,
+        /// From the response's content-length header, if present.
+        res_size: Option<u64>,
     },
 }
 
@@ -76,6 +89,19 @@ pub fn set_intercept_tls(enabled: bool) {
 
 fn intercept_tls() -> bool {
     INTERCEPT_TLS.load(Ordering::SeqCst)
+}
+
+/// Traffic capture master switch. When false the engine still forwards and
+/// correlates traffic (pending queue untouched) but emits no ProxyEvents and
+/// writes nothing to BodyStore, so re-enabling mid-connection stays correct.
+static RECORDING: AtomicBool = AtomicBool::new(true);
+
+pub fn set_recording(enabled: bool) {
+    RECORDING.store(enabled, Ordering::SeqCst);
+}
+
+fn recording() -> bool {
+    RECORDING.load(Ordering::SeqCst)
 }
 
 fn now_ms() -> u64 {
@@ -240,6 +266,9 @@ struct EmitHandler {
     sink: Sink,
     store: SharedStore,
     pending: VecDeque<Pending>,
+    /// The proxy's own listen address, used as the remote end when matching
+    /// the TCP table for client attribution.
+    proxy_addr: SocketAddr,
 }
 
 impl HttpHandler for EmitHandler {
@@ -260,39 +289,70 @@ impl HttpHandler for EmitHandler {
         req: Request<Body>,
     ) -> RequestOrResponse {
         let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
+        let method = req.method().to_string();
+        let url = req.uri().to_string();
+        // CONNECT tunnels carry an authority-form URI (no scheme); label them
+        // "tunnel" so the UI can build an SSL column off `scheme`.
+        let scheme = if method == "CONNECT" {
+            "tunnel".to_string()
+        } else {
+            req.uri().scheme_str().unwrap_or("").to_string()
+        };
+        let req_content_type = req
+            .headers()
+            .get(header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_owned);
+        let req_size = req
+            .headers()
+            .get(header::CONTENT_LENGTH)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse::<u64>().ok());
         let entry = TrafficEntry {
             id,
-            method: req.method().to_string(),
-            url: req.uri().to_string(),
+            method,
+            url,
             started_at_ms: now_ms(),
+            scheme,
+            req_content_type,
+            req_size,
+            // Resolve before emitting so the Request row carries attribution.
+            client: crate::client::process_name(_ctx.client_addr, self.proxy_addr),
         };
         // CONNECT tunnel: logged like Proxyman (with headers); we intercept,
         // so it answers 200 and the decrypted requests follow as their own
         // rows. Kept out of the pending queue so correlation stays correct.
         let req_capture: Arc<Mutex<Vec<u8>>> = Arc::default();
         if req.method().as_str() == "CONNECT" {
-            self.store
-                .lock()
-                .unwrap()
-                .insert_request(id, headers_text(req.headers()), req_capture);
-            (self.sink)(ProxyEvent::Request { entry });
-            (self.sink)(ProxyEvent::Response {
-                id,
-                status: 200,
-                duration_ms: None,
-            });
+            if recording() {
+                self.store.lock().unwrap().insert_request(
+                    id,
+                    headers_text(req.headers()),
+                    req_capture,
+                );
+                (self.sink)(ProxyEvent::Request { entry });
+                (self.sink)(ProxyEvent::Response {
+                    id,
+                    status: 200,
+                    duration_ms: None,
+                    res_content_type: None,
+                    res_size: None,
+                });
+            }
             return RequestOrResponse::Request(req);
         }
         self.pending.push_back(Pending {
             id: entry.id,
             started: Instant::now(),
         });
-        self.store.lock().unwrap().insert_request(
-            entry.id,
-            headers_text(req.headers()),
-            req_capture.clone(),
-        );
-        (self.sink)(ProxyEvent::Request { entry });
+        if recording() {
+            self.store.lock().unwrap().insert_request(
+                entry.id,
+                headers_text(req.headers()),
+                req_capture.clone(),
+            );
+            (self.sink)(ProxyEvent::Request { entry });
+        }
 
         let encoding = req
             .headers()
@@ -347,10 +407,24 @@ impl HttpHandler for EmitHandler {
         };
 
         let res_headers = headers_text(res.headers());
+        // Capture from the real headers before consuming the response into
+        // parts / teeing the body, so values reflect what the upstream sent.
+        let res_content_type = res
+            .headers()
+            .get(header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_owned);
+        let res_size = res
+            .headers()
+            .get(header::CONTENT_LENGTH)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse::<u64>().ok());
         let (parts, body) = res.into_parts();
         let res_capture: Arc<Mutex<Vec<u8>>> = Arc::default();
         let body = tee(body, res_capture.clone());
-        if let Some(p) = &pending {
+        if let Some(p) = &pending
+            && recording()
+        {
             self.store
                 .lock()
                 .unwrap()
@@ -359,11 +433,15 @@ impl HttpHandler for EmitHandler {
         let duration_ms = pending
             .as_ref()
             .map(|p| p.started.elapsed().as_millis() as u64);
-        (self.sink)(ProxyEvent::Response {
-            id: pending.map(|p| p.id).unwrap_or(0),
-            status,
-            duration_ms,
-        });
+        if recording() {
+            (self.sink)(ProxyEvent::Response {
+                id: pending.map(|p| p.id).unwrap_or(0),
+                status,
+                duration_ms,
+                res_content_type,
+                res_size,
+            });
+        }
         Response::from_parts(parts, body)
     }
 
@@ -374,7 +452,9 @@ impl HttpHandler for EmitHandler {
     ) -> Response<Body> {
         // Upstream failed: still emit a status (502) so the queue stays balanced.
         let pending = self.pending.pop_front();
-        if let Some(p) = &pending {
+        if let Some(p) = &pending
+            && recording()
+        {
             self.store
                 .lock()
                 .unwrap()
@@ -383,11 +463,15 @@ impl HttpHandler for EmitHandler {
         let duration_ms = pending
             .as_ref()
             .map(|p| p.started.elapsed().as_millis() as u64);
-        (self.sink)(ProxyEvent::Response {
-            id: pending.map(|p| p.id).unwrap_or(0),
-            status: 502,
-            duration_ms,
-        });
+        if recording() {
+            (self.sink)(ProxyEvent::Response {
+                id: pending.map(|p| p.id).unwrap_or(0),
+                status: 502,
+                duration_ms,
+                res_content_type: None,
+                res_size: None,
+            });
+        }
         Response::builder()
             .status(StatusCode::BAD_GATEWAY)
             .body(Body::empty())
@@ -452,6 +536,7 @@ fn fresh_ca(cer_path: Option<&Path>) -> Result<Issuer<'static, KeyPair>, String>
 pub async fn start(
     sink: Sink,
     addr: SocketAddr,
+    proxy_addr: SocketAddr,
     ca_dir: Option<&Path>,
     store: SharedStore,
     shutdown: impl Future<Output = ()> + Send + 'static,
@@ -469,6 +554,7 @@ pub async fn start(
             sink,
             store,
             pending: VecDeque::new(),
+            proxy_addr,
         })
         .with_graceful_shutdown(shutdown)
         .build()
