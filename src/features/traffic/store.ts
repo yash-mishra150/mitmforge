@@ -44,11 +44,7 @@ function schedule(set: (fn: (s: TrafficState) => Partial<TrafficState>) => void)
       for (const entry of requests) {
         rows = [
           {
-            id: entry.id,
-            method: entry.method,
-            url: entry.url,
-            started_at_ms: entry.started_at_ms,
-            scheme: entry.scheme,
+            ...entry,
             req_content_type: entry.req_content_type ?? null,
             req_size: entry.req_size ?? null,
             client: entry.client ?? null,
