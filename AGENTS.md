@@ -33,7 +33,7 @@ cargo fmt --all        # in src-tauri/
 
 ## Architecture in one breath
 
-`src/proxy.rs` engine (hudsucker 0.25, in-memory-CA-file persistence, tee body capture ≤64 KB into `BodyStore` ≤500 exchanges, FIFO request/response correlation, CONNECT rows logged outside the queue) → `Sink` → one tagged `proxy://event` channel → zustand store (10k ring, 50 ms batching) → virtualized grid. TLS decrypts only when the CA is trusted; otherwise blind tunnel. System proxy lives in `src/system_proxy.rs` (HKCU registry + WinINet refresh, previous-state healing, certutil-based `ca_trusted()` cached per launch).
+`src/proxy.rs` engine (hudsucker 0.25, in-memory-CA-file persistence, tee body capture ≤64 KB into `BodyStore` ≤500 exchanges, FIFO request/response correlation, CONNECT rows logged outside the queue, scheme/content-type/size metadata, `set_recording()` event gating) → `Sink` → one tagged `proxy://event` channel → zustand store (10k ring, 50 ms batching) → virtualized grid. Client attribution (`src/client.rs`: Windows TCP table → PID → name, best-effort None). JSONL auto-save + recording toggle live in `commands/proxy.rs`. TLS decrypts only when the CA is trusted; otherwise blind tunnel. System proxy lives in `src/system_proxy.rs` (HKCU registry + WinINet refresh, previous-state healing, certutil-based `ca_trusted()` cached per launch).
 
 ## Conventions
 

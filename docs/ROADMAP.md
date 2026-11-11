@@ -14,14 +14,14 @@ Status: ✅ done · 🔜 planned · ⏸ deferred. Ordered by phase; phases 3a �
 
 ## Phase 3a — data + views (current work)
 
-- 🔜 Engine fields: scheme/SSL flag, content-type (request + response), byte sizes
-- 🔜 Client attribution: which app/process sent each request (Windows TCP table → PID → process name)
+- ✅ Engine fields: scheme/SSL flag, content-type (request + response), byte sizes
+- ✅ Client attribution: which app/process sent each request (Windows TCP table → PID → process name)
 - 🔜 Sidebar: Capture ▸ Overview / Favorites ▸ Pinned, Saved / All ▸ Apps, Domains (host → path tree)
-- 🔜 Main log columns: id, method, url, client, status, time, duration, request, response, ssl, edited, tools, comment
+- 🔜 Main log columns: request/response markers, edited, tools, comment (id, method, url, client, status, time, duration, ssl done)
 - 🔜 Filter bar: content types (JSON/Form/XML/JS/CSS/GraphQL/Document/Media/Other) + status classes (1xx–5xx)
 - 🔜 Row detail pane upgrade: headers, query, raw, bodies per tab
-- 🔜 Recording pause/resume
-- 🔜 Auto-save logs to Documents (JSONL), disable-able
+- ✅ Recording pause/resume (engine keeps correlating while paused; events withheld)
+- ✅ Auto-save logs to Documents (JSONL), disable-able (`Documents\MitmForge\traffic-log.jsonl`, on by default)
 - 🔜 Overview dashboard: requests, data transferred, errors, avg duration, status breakdown, top apps/domains, slowest requests, response-time buckets (CSS charts, no chart lib)
 
 ## Phase 3b — tools
