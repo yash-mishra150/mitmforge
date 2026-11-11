@@ -7,9 +7,10 @@ A free, open-source **native HTTP/HTTPS debugging proxy** for Windows — the Pr
 ## What it does today
 
 - **System-wide capture** — one toggle routes every proxy-aware app (browsers, Node, curl, Electron apps) through MitmForge, automatically restored when you quit
-- **Live traffic grid** — every request/response streaming in real time: method, URL, status, duration, timing
+- **Live traffic grid** — every request/response streaming in real time: method, URL, status, duration, timing, SSL flag, and the local app that sent it (client attribution)
 - **HTTPS decryption** — one-click Root CA install; untrusted tunnels pass through untouched so nothing ever breaks
 - **Inspector** — click a row to see request/response headers and bodies
+- **Recording controls** — pause/resume capture without losing in-flight correlation; optional auto-save of every event to `Documents\MitmForge\traffic-log.jsonl`
 - **Safe by design** — app close restores your previous proxy settings; a crashed session self-heals on the next launch; single-instance guard prevents port fights
 
 ## Requirements

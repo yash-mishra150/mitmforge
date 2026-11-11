@@ -14,6 +14,7 @@ MitmForge is a Tauri 2 desktop app: a React frontend (TypeScript) driving a Rust
 │ src-tauri                                                    │
 │  commands/  — thin typed IPC adapters (tauri-specta)         │
 │  proxy.rs   — MITM engine (hudsucker), Tauri-free            │
+│  client.rs  — client attribution (Windows TCP table → name)  │
 │  system_proxy.rs — Windows system proxy control              │
 └──────────────────────────────────────────────────────────────┘
         ↕ sockets
@@ -26,7 +27,9 @@ MitmForge is a Tauri 2 desktop app: a React frontend (TypeScript) driving a Rust
 
 - Built on [`hudsucker`](https://docs.rs/hudsucker) 0.25 (hyper 1.x, rustls 0.23). CA + leaf certificates via `rcgen`.
 - **Tauri-free by design**: the engine never imports Tauri types. It emits `ProxyEvent`s through a `Sink = Arc<dyn Fn(ProxyEvent) + Send + Sync>` and takes its body store and shutdown future as parameters — testable headless (`tests/proxy_engine.rs` runs a real exchange).
-- **Events**: `ProxyEvent::Request { entry: TrafficEntry }` (id, method, url, timestamp) and `ProxyEvent::Response { id, status, duration_ms }`. Responses patch rows by id.
+- **Events**: `ProxyEvent::Request { entry: TrafficEntry }` (id, method, url, timestamp, scheme, request content-type/size, `client` process name) and `ProxyEvent::Response { id, status, duration_ms, res_content_type, res_size }`. Responses patch rows by id.
+- **Recording**: `set_recording()` gates event emission only — the engine keeps parsing and correlating while paused, so resuming loses nothing mid-flight. Toggled via the `traffic_recording` command.
+- **Auto-save**: the commands layer appends every emitted event as one JSON line to `<Documents>\MitmForge\traffic-log.jsonl` (on by default, `traffic_autosave` toggle, file opened at `proxy_start`).
 - **Correlation**: hudsucker passes each request/response pair to the same handler instance, so a FIFO queue (`pending`) correlates responses to requests. Sequential HTTP/1.1 only (hudsucker's `http2` feature is off; multiplexing needs different plumbing).
 - **Bodies**: tee capture — every chunk forwards untouched while up to 64 KB is copied into `BodyStore` (500 exchanges, FIFO eviction). Never buffers or corrupts streams. The UI fetches bodies lazily via the `traffic_body` command (BRD: lazy-load heavy payloads).
 - **Headers** are captured synchronously and stored alongside bodies.
@@ -40,6 +43,12 @@ One file per domain, `#[tauri::command] #[specta::specta]`, registered in `comma
 
 - `proxy_start` — starts the engine once (port pre-check fails fast), spawns it on Tauri's runtime, and auto-enables system capture when the port is actually bindable. The engine starts from the frontend *after* the event listener attaches, so early traffic isn't lost.
 - `proxy_status` / `proxy_install_ca` / `proxy_set_system` / `traffic_body` — status pills, certutil install, capture toggle, lazy bodies.
+- `traffic_recording` / `traffic_autosave` — pause/resume event emission; JSONL auto-save toggle.
+
+### `src/client.rs` — client attribution (Windows)
+
+- Resolves which local process opened each connection: `GetExtendedTcpTable` rows matched on the proxy's client port (ports arrive in network byte order — swapped manually), PID → executable name, cached per launch.
+- Best-effort by design: returns `None` on non-Windows, lookup failure, or no matching row — the engine never panics on attribution.
 
 ### `src/system_proxy.rs` — Windows system proxy
 
@@ -60,7 +69,7 @@ One file per domain, `#[tauri::command] #[specta::specta]`, registered in `comma
 - `src/platform/ipc.ts` — `call()` unwraps tauri-specta's `typedError` results.
 - `src/features/traffic/` — the capture feature:
   - `store.ts` (zustand): 10 000-row ring buffer, requests prepend, responses patch by id, events coalesced into one store update per 50 ms.
-  - `TrafficGrid.tsx`: `@tanstack/react-virtual` grid with memoized rows (only patched rows re-render), status/method color coding, header controls (system proxy toggle, Trust CA, clear).
+  - `TrafficGrid.tsx`: `@tanstack/react-virtual` grid with memoized rows (only patched rows re-render), status/method color coding, SSL + Client columns, header controls (recording pause/resume, auto-save, system proxy toggle, Trust CA, clear).
 - Events arrive on a single channel `proxy://event` whose payload is the tagged `ProxyEvent` union; the frontend narrows on `payload.type` (same pattern as OpenIDEA's `ide://event`).
 
 ## Windows specifics
