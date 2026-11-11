@@ -42,3 +42,25 @@ cargo fmt --all        # in src-tauri/
 - Add tests for engine-level logic (see `tests/proxy_engine.rs` pattern: real exchange through the proxy, local upstream, no network).
 - shortcut: comments in code marked `shortcut:` document known limits — upgrade them when the limit bites.
 - Keep `docs/` and this file current as features land; docs are part of the deliverable.
+
+## Agent lanes — how changes are built (free subagents)
+
+Lanes are configured globally in `~/.config/opencode/opencode.jsonc` (`mode: "subagent"`, OpenRouter `:free` models, three separate rate-limit buckets). Any OpenCode primary session in this repo can dispatch them directly — no worktrees needed unless lanes would collide (see ownership).
+
+| Lane | Model | Scope |
+|---|---|---|
+| `coder` | `openrouter/nvidia/nemotron-3.5-super-vl:free` | Rust engine: `src-tauri/src/proxy.rs`, `client.rs`, `system_proxy.rs`, engine tests |
+| `coder2` | `openrouter/google/gemma-4-31b-it:free` | Frontend: `src/features/**`, TypeScript, store/grid, UI tests |
+| `worker` | `openrouter/baidu/ernie-5.5-flash-preview:free` | Docs, mechanical edits, lint fixes, repetitive patches |
+
+**Protocol** (architect = the premium orchestrator session; free lanes never self-verify):
+
+1. Architect decomposes the feature into per-lane specs: exact files, exact shape, which Hard rules apply, tests to add. Small tasks — free models drift on big ones.
+2. Dispatch lanes in parallel only when file scopes don't overlap (ownership table above prevents most conflicts; `src/bindings.ts` and `commands/` are architect-owned).
+3. Architect reviews every diff against the spec, then runs the gate: `cargo fmt --all` + `cargo clippy --all-targets -- -D warnings` + `cargo test` (in `src-tauri/`) + `npm run gen:bindings` + `npx tsc --noEmit`. Green or it doesn't land.
+4. Architect owns: merge conflict resolution, `src/bindings.ts` (regenerated, never hand-edited), engine decisions in `proxy.rs`, commits, push, docs updates.
+5. Two retries on a lane, then the architect does it itself — no death spirals on free models.
+
+**Running it directly from OpenCode:** open `opencode` in the repo and ask the session to run the batch — the session dispatches `coder`/`coder2`/`worker` as subagents. One-shot smoke test of a lane's model without an agent: `opencode run -m <exact model id> "Reply with exactly: OK"`. Launching separate `opencode` sessions per lane is unnecessary; parallelism comes from dispatching multiple subagents in one session.
+
+**Model changes:** free-tier IDs churn. Verify with an exact-string search (fuzzy search misses variants — missed `ernie-5.5-flash-preview:free` and `nemotron-3-ultra-550b-a55b:free` twice), smoke-test with `opencode run`, then commit. Known dead: `nvidia/nemotron-3-ultra-550b-a55b:free` returns corrupted mojibake on the free route (2026-11-11) — retest before promoting. Fallbacks: heavy → gemma; worker → `openrouter/cohere/north-mini-code:free`.
