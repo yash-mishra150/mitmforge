@@ -95,11 +95,9 @@ const RowView = memo(function RowView({
 
 interface TrafficGridProps {
   activeTabs: string[];
-  systemOn: boolean;
-  recording: boolean;
 }
 
-export function TrafficGrid({ activeTabs, systemOn, recording }: TrafficGridProps) {
+export function TrafficGrid({ activeTabs }: TrafficGridProps) {
   const rows = useTraffic((s) => s.rows);
   const selectedId = useTraffic((s) => s.selectedId);
   const select = useTraffic((s) => s.select);
@@ -197,18 +195,8 @@ export function TrafficGrid({ activeTabs, systemOn, recording }: TrafficGridProp
 
       <div className="flex h-7 shrink-0 items-center justify-between border-t border-line bg-app px-3 text-[11px] text-muted">
         <span className="flex items-center gap-2">
-          <span
-            className={`inline-block h-1.5 w-1.5 rounded-full ${systemOn ? "bg-accent" : "bg-line"}`}
-          />
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-line" />
           proxy 127.0.0.1:8080
-          {systemOn && (
-            <span className="rounded bg-[color-mix(in_srgb,var(--mt-accent)_15%,transparent)] px-1.5 text-accent">
-              SYS
-            </span>
-          )}
-          <span className={recording ? "text-success" : "text-muted opacity-70"}>
-            {recording ? "REC" : "PAUSED"}
-          </span>
         </span>
         <span>{filteredRows.length}/{rows.length} req</span>
       </div>
