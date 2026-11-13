@@ -235,7 +235,7 @@ export default function App() {
           <button
             type="button"
             onClick={toggleSystem}
-            className={`${ICON_BTN} ${system ? "text-accent" : ""}`}
+            className={`${ICON_BTN} ${system ? "text-success" : ""}`}
             title={`System proxy ${system ? "on" : "off"}`}
           >
             <Globe size={14} />
