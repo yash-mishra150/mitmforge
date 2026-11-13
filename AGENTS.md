@@ -18,7 +18,11 @@ cargo clippy --all-targets -- -D warnings   # in src-tauri/
 cargo fmt --all        # in src-tauri/
 ```
 
+Single test: `cargo test --test proxy_engine` (binds 127.0.0.1:18080/18081, no network) / `--test system_proxy` (touches the registry) / `--test export_bindings`. Run all with `--test-threads=1` — the system-proxy test mutates HKCU and races itself in parallel. Tests also assert `client` attribution may be `None` when the TCP-table lookup fails.
+
 `npm run build` (plain vite build) is not the app build. No CI configured yet.
+
+`tauri-specta`/`specta` are pinned `=2.0.0-rc.26` (pairs with the current tauri 2.x command macros) — don't bump them casually, binding gen breaks.
 
 ## Hard rules (each one fixed a real bug)
 
@@ -50,7 +54,7 @@ Lanes are configured globally in `~/.config/opencode/opencode.jsonc` (`mode: "su
 | Lane | Model | Scope |
 |---|---|---|
 | `coder` | `openrouter/nvidia/nemotron-3.5-super-vl:free` | Rust engine: `src-tauri/src/proxy.rs`, `client.rs`, `system_proxy.rs`, engine tests |
-| `coder2` | `openrouter/google/gemma-4-31b-it:free` | Frontend: `src/features/**`, TypeScript, store/grid, UI tests |
+| `coder2` | `openrouter/cohere/north-mini-code:free` | Frontend: `src/features/**`, TypeScript, store/grid, UI tests |
 | `worker` | `openrouter/baidu/ernie-5.5-flash-preview:free` | Docs, mechanical edits, lint fixes, repetitive patches |
 
 **Protocol** (architect = the premium orchestrator session; free lanes never self-verify):
@@ -63,4 +67,4 @@ Lanes are configured globally in `~/.config/opencode/opencode.jsonc` (`mode: "su
 
 **Running it directly from OpenCode:** open `opencode` in the repo and ask the session to run the batch — the session dispatches `coder`/`coder2`/`worker` as subagents. One-shot smoke test of a lane's model without an agent: `opencode run -m <exact model id> "Reply with exactly: OK"`. Launching separate `opencode` sessions per lane is unnecessary; parallelism comes from dispatching multiple subagents in one session.
 
-**Model changes:** free-tier IDs churn. Verify with an exact-string search (fuzzy search misses variants — missed `ernie-5.5-flash-preview:free` and `nemotron-3-ultra-550b-a55b:free` twice), smoke-test with `opencode run`, then commit. Known dead: `nvidia/nemotron-3-ultra-550b-a55b:free` returns corrupted mojibake on the free route (2026-11-11) — retest before promoting. Fallbacks: heavy → gemma; worker → `openrouter/cohere/north-mini-code:free`.
+**Model changes:** free-tier IDs churn. Verify with an exact-string search (fuzzy search misses variants — missed `ernie-5.5-flash-preview:free` and `nemotron-3-ultra-550b-a55b:free` twice), smoke-test with `opencode run`, then commit. Known dead: `nvidia/nemotron-3-ultra-550b-a55b:free` returns corrupted mojibake on the free route (2026-11-11); `google/gemma-4-31b-it:free` and `google/gemma-4-26b-a4b-it:free` both fail all requests (2026-11-13) — retest before promoting. Fallback: worker → `openrouter/cohere/north-mini-code:free`. north-mini-code passes smoke tests but mangled a real TrafficGrid.tsx rewrite (2026-11-13, recovered by architect) — give it small specs and review the diff closely; expect to finish frontend work as architect.

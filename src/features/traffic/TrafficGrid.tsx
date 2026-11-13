@@ -1,8 +1,11 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ShieldCheck, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
-import { call, commands, type BodyText, type ProxyStatus } from "../../platform/ipc";
+import { call, commands, type ProxyStatus } from "../../platform/ipc";
 import { useTraffic, type TrafficRow } from "./store";
+import { FilterBar } from "./FilterBar";
+import { RowDetail } from "./RowDetail";
+import { contentCategory } from "./selectors";
 
 const METHOD_COLORS: Record<string, string> = {
   GET: "text-emerald-400",
@@ -33,42 +36,8 @@ function time(ms: number): string {
   return new Date(ms).toLocaleTimeString([], { hour12: false });
 }
 
-function BodyPane({ row }: { row: TrafficRow }) {
-  const [body, setBody] = useState<BodyText | null>(null);
-  useEffect(() => {
-    setBody(null);
-    let alive = true;
-    void commands
-      .trafficBody(row.id)
-      .then((b) => {
-        if (alive) setBody(b);
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, [row.id, row.status]);
+const GRID_COLS = "grid-cols-[2rem_3rem_4.5rem_3.5rem_4rem_1fr_5.5rem_3rem_5rem_9rem]";
 
-  return (
-    <div className="grid h-64 shrink-0 grid-cols-2 gap-px overflow-hidden border-t border-neutral-800 bg-neutral-950 text-xs">
-      {(
-        [
-          ["Request", body?.req_headers, body?.req_body],
-          ["Response", body?.res_headers, body?.res_body],
-        ] as const
-      ).map(([title, headers, content]) => (
-        <div key={title} className="overflow-auto p-2">
-          <div className="mb-1 text-neutral-500">{title}</div>
-          <pre className="whitespace-pre-wrap break-all text-neutral-300">
-            {headers || ""}
-            {headers && content ? "\n\n" : ""}
-            {content || (body ? "" : "…")}
-          </pre>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 /** Memoized row: only the row whose object changed re-renders, not the grid. */
 const RowView = memo(function RowView({
@@ -78,6 +47,11 @@ const RowView = memo(function RowView({
   start,
   size,
   onSelect,
+  comment,
+  editing,
+  onStartEdit,
+  onCommitEdit,
+  onCancelEdit,
 }: {
   row: TrafficRow;
   selected: boolean;
@@ -85,6 +59,11 @@ const RowView = memo(function RowView({
   start: number;
   size: number;
   onSelect: (id: number) => void;
+  comment: string | undefined;
+  editing: boolean;
+  onStartEdit: (id: number) => void;
+  onCommitEdit: (id: number, value: string) => void;
+  onCancelEdit: () => void;
 }) {
   const { host, path } = splitUrl(row.url);
   return (
@@ -98,9 +77,12 @@ const RowView = memo(function RowView({
         height: size,
         transform: `translateY(${start}px)`,
       }}
-      className={`grid cursor-pointer grid-cols-[3rem_4.5rem_3.5rem_4rem_1fr_5.5rem_3rem_5rem] items-center gap-x-3 border-b border-neutral-800/50 px-3 ${selected ? "bg-neutral-800" : "hover:bg-neutral-800/50"}`}
+      className={`grid cursor-pointer ${GRID_COLS} items-center gap-x-3 border-b border-neutral-800/50 px-3 ${selected ? "bg-neutral-800" : "hover:bg-neutral-800/50"}`}
       data-index={index}
     >
+      <span className={row.status === null ? "text-amber-400" : "text-emerald-400"}>
+        {row.status === null ? "●" : "✓"}
+      </span>
       <span className="text-neutral-600">{row.id}</span>
       <span className={METHOD_COLORS[row.method] ?? "text-neutral-300"}>{row.method}</span>
       <span className={statusColor(row.status)}>{row.status ?? "…"}</span>
@@ -112,6 +94,30 @@ const RowView = memo(function RowView({
       <span className="text-neutral-600">{time(row.started_at_ms)}</span>
       <span className="text-neutral-600">{row.scheme === "https" ? "SSL" : "–"}</span>
       <span className="text-neutral-500 truncate">{row.client ?? "—"}</span>
+      {editing ? (
+        <input
+          autoFocus
+          defaultValue={comment ?? ""}
+          onClick={(e) => e.stopPropagation()}
+          onBlur={(e) => onCommitEdit(row.id, e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onCommitEdit(row.id, e.currentTarget.value);
+            else if (e.key === "Escape") onCancelEdit();
+          }}
+          className="w-full rounded bg-neutral-800 px-1 text-xs text-neutral-200 outline-none"
+        />
+      ) : (
+        <span
+          className="truncate text-neutral-400"
+          title={comment ? undefined : "Click to add a comment"}
+          onClick={(e) => {
+            e.stopPropagation();
+            onStartEdit(row.id);
+          }}
+        >
+          {comment || ""}
+        </span>
+      )}
     </div>
   );
 });
@@ -121,10 +127,19 @@ export function TrafficGrid() {
   const selectedId = useTraffic((s) => s.selectedId);
   const select = useTraffic((s) => s.select);
   const clear = useTraffic((s) => s.clear);
+  const comments = useTraffic((s) => s.comments);
+  const setComment = useTraffic((s) => s.setComment);
+  const hostFilter = useTraffic((s) => s.hostFilter);
+  const clientFilter = useTraffic((s) => s.clientFilter);
+  const setHostFilter = useTraffic((s) => s.setHostFilter);
+  const setClientFilter = useTraffic((s) => s.setClientFilter);
   const [status, setStatus] = useState<ProxyStatus | null>(null);
   const [message, setMessage] = useState("");
   const [recording, setRecording] = useState(true);
   const [autoSave, setAutoSave] = useState(true);
+  const [contentFilters, setContentFilters] = useState<string[]>([]);
+  const [statusFilters, setStatusFilters] = useState<number[]>([]);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const parentRef = useRef<HTMLDivElement>(null);
 
   const refreshStatus = () => {
@@ -170,8 +185,52 @@ export function TrafficGrid() {
     void commands.trafficAutosave(target).then(() => setMessage(target ? "Auto-save on" : "Auto-save off"));
   };
 
+  // View-level filter only — the ring buffer in the store is untouched.
+  // Chip filters + sidebar host/client filters AND together.
+  const filteredRows = useMemo(
+    () =>
+      rows.filter((row) => {
+        if (
+          contentFilters.length > 0 &&
+          !contentFilters.includes(contentCategory(row.resContentType, row.req_content_type))
+        )
+          return false;
+        if (statusFilters.length > 0 && (row.status === null || !statusFilters.includes(Math.floor(row.status / 100))))
+          return false;
+        if (hostFilter !== null && !row.url.includes(hostFilter)) return false;
+        if (clientFilter !== null && row.client !== clientFilter) return false;
+        return true;
+      }),
+    [rows, contentFilters, statusFilters, hostFilter, clientFilter],
+  );
+
+  const toggleContentFilter = useCallback((type: string) => {
+    setContentFilters((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]));
+  }, []);
+
+  const toggleStatusFilter = useCallback((category: number) => {
+    setStatusFilters((prev) => (prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]));
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setContentFilters([]);
+    setStatusFilters([]);
+  }, []);
+
+  const startEdit = useCallback((id: number) => setEditingId(id), []);
+
+  const commitEdit = useCallback(
+    (id: number, value: string) => {
+      setEditingId(null);
+      setComment(id, value.trim());
+    },
+    [setComment],
+  );
+
+  const cancelEdit = useCallback(() => setEditingId(null), []);
+
   const virtualizer = useVirtualizer({
-    count: rows.length,
+    count: filteredRows.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 28,
     overscan: 20,
@@ -241,7 +300,43 @@ export function TrafficGrid() {
         </span>
       </header>
 
-      <div className="grid grid-cols-[3rem_4.5rem_3.5rem_4rem_1fr_5.5rem_3rem_5rem] gap-x-3 border-b border-neutral-800 px-3 py-1 text-xs tracking-wide text-neutral-500 uppercase">
+      <FilterBar
+        contentFilters={contentFilters}
+        statusFilters={statusFilters}
+        onContentFilterToggle={toggleContentFilter}
+        onStatusFilterToggle={toggleStatusFilter}
+        onClear={clearFilters}
+        activeCount={contentFilters.length + statusFilters.length}
+      />
+
+      {(hostFilter !== null || clientFilter !== null) && (
+        <div className="flex items-center gap-2 border-b border-neutral-800 px-3 py-1 text-xs">
+          {hostFilter !== null && (
+            <button
+              type="button"
+              onClick={() => setHostFilter(null)}
+              className="rounded bg-neutral-800 px-2 py-0.5 text-neutral-300 hover:bg-neutral-700"
+              title="Clear host filter"
+            >
+              host: {hostFilter} ✕
+            </button>
+          )}
+          {clientFilter !== null && (
+            <button
+              type="button"
+              onClick={() => setClientFilter(null)}
+              className="rounded bg-neutral-800 px-2 py-0.5 text-neutral-300 hover:bg-neutral-700"
+              title="Clear app filter"
+            >
+              app: {clientFilter} ✕
+            </button>
+          )}
+          <span className="text-neutral-500">{filteredRows.length} shown</span>
+        </div>
+      )}
+
+      <div className={`grid ${GRID_COLS} gap-x-3 border-b border-neutral-800 px-3 py-1 text-xs tracking-wide text-neutral-500 uppercase`}>
+        <span />
         <span>#</span>
         <span>Method</span>
         <span>Status</span>
@@ -250,25 +345,31 @@ export function TrafficGrid() {
         <span>Time</span>
         <span>SSL</span>
         <span>Client</span>
+        <span>Comment</span>
       </div>
 
       <div ref={parentRef} className="min-h-0 flex-1 overflow-auto font-mono text-xs">
         <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
           {virtualizer.getVirtualItems().map((v) => (
             <RowView
-              key={rows[v.index].id}
-              row={rows[v.index]}
-              selected={rows[v.index].id === selectedId}
+              key={filteredRows[v.index].id}
+              row={filteredRows[v.index]}
+              selected={filteredRows[v.index].id === selectedId}
               index={v.index}
               start={v.start}
               size={v.size}
               onSelect={onRowClick}
+              comment={comments[filteredRows[v.index].id.toString()]}
+              editing={editingId === filteredRows[v.index].id}
+              onStartEdit={startEdit}
+              onCommitEdit={commitEdit}
+              onCancelEdit={cancelEdit}
             />
           ))}
         </div>
       </div>
 
-      {selected && <BodyPane row={selected} />}
+      {selected && <RowDetail row={selected} />}
     </div>
   );
 }

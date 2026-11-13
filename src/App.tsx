@@ -4,6 +4,7 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { commands, type ProxyEvent } from "./bindings";
 import { useTraffic } from "./features/traffic/store";
 import { TrafficGrid } from "./features/traffic/TrafficGrid";
+import { Sidebar } from "./features/traffic/Sidebar";
 
 // Single backend → UI event channel; payload is a tagged ProxyEvent.
 const PROXY_EVENT = "proxy://event";
@@ -24,5 +25,12 @@ export default function App() {
     };
   }, []);
 
-  return <TrafficGrid />;
+  return (
+    <div className="flex h-full">
+      <Sidebar />
+      <div className="min-w-0 flex-1">
+        <TrafficGrid />
+      </div>
+    </div>
+  );
 }
