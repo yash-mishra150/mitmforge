@@ -172,6 +172,25 @@ fn decodable(content_encoding: Option<&str>) -> bool {
     }
 }
 
+/// Returns a header value as an owned String, or None when absent / not
+/// representable as visible ASCII.
+fn header_value(headers: &header::HeaderMap, name: &str) -> Option<String> {
+    headers
+        .get(name)
+        .and_then(|v| v.to_str().ok())
+        .map(str::to_owned)
+}
+
+/// Content-length as u64, or None when absent / not a valid u64.
+fn header_u64(headers: &header::HeaderMap) -> Option<u64> {
+    header_value(headers, header::CONTENT_LENGTH.as_str()).and_then(|v| v.parse::<u64>().ok())
+}
+
+/// Content-encoding header, if present.
+fn content_encoding(headers: &header::HeaderMap) -> Option<String> {
+    header_value(headers, "content-encoding")
+}
+
 /// Lazily-fetched captured data for one exchange (lossy UTF-8 on read).
 #[derive(Default)]
 pub struct Captured {
@@ -257,6 +276,72 @@ struct Pending {
     started: Instant,
 }
 
+/// Builds a 502 Bad Gateway with an empty body, used when body decoding fails.
+fn bad_gateway() -> Response<Body> {
+    Response::builder()
+        .status(StatusCode::BAD_GATEWAY)
+        .body(Body::empty())
+        .expect("build 502 response")
+}
+
+/// Decodes a request body; on failure logs and returns a 502. The `decodable()`
+/// gate makes the Err path unreachable for supported encodings, but it is kept
+/// so a corrupt exchange fails visibly instead of being forwarded.
+#[allow(clippy::result_large_err)]
+fn decoded_request(req: Request<Body>) -> Result<Request<Body>, Response<Body>> {
+    match hudsucker::decode_request(req) {
+        Ok(req) => Ok(req),
+        Err(e) => {
+            eprintln!("decode_request failed unexpectedly: {e}");
+            Err(bad_gateway())
+        }
+    }
+}
+
+/// Decodes a response body; on failure logs and returns a 502. The `decodable()`
+/// gate makes the Err path unreachable for supported encodings, but it is kept
+/// so a corrupt exchange fails visibly instead of being forwarded.
+#[allow(clippy::result_large_err)]
+fn decoded_response(res: Response<Body>) -> Result<Response<Body>, Response<Body>> {
+    match hudsucker::decode_response(res) {
+        Ok(res) => Ok(res),
+        Err(e) => {
+            eprintln!("decode_response failed unexpectedly: {e}");
+            Err(bad_gateway())
+        }
+    }
+}
+
+/// Builds the `TrafficEntry` for a request: method, URL, scheme (or "tunnel"
+/// for CONNECT), content-type/size, and client attribution.
+fn build_entry(
+    id: u64,
+    req: &Request<Body>,
+    client_addr: SocketAddr,
+    proxy_addr: SocketAddr,
+) -> TrafficEntry {
+    let method = req.method().to_string();
+    let url = req.uri().to_string();
+    // CONNECT tunnels carry an authority-form URI (no scheme); label them
+    // "tunnel" so the UI can build an SSL column off `scheme`.
+    let scheme = if method == "CONNECT" {
+        "tunnel".to_string()
+    } else {
+        req.uri().scheme_str().unwrap_or("").to_string()
+    };
+    TrafficEntry {
+        id,
+        method,
+        url,
+        started_at_ms: now_ms(),
+        scheme,
+        req_content_type: header_value(req.headers(), header::CONTENT_TYPE.as_str()),
+        req_size: header_u64(req.headers()),
+        // Resolve before emitting so the Request row carries attribution.
+        client: crate::client::process_name(client_addr, proxy_addr),
+    }
+}
+
 /// Per-connection handler: hudsucker passes each request/response pair to the
 /// same handler instance, so a FIFO queue correlates response → request id.
 /// Sequential HTTP/1.1 only; HTTP/2 multiplexing needs different plumbing
@@ -289,36 +374,8 @@ impl HttpHandler for EmitHandler {
         req: Request<Body>,
     ) -> RequestOrResponse {
         let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
-        let method = req.method().to_string();
-        let url = req.uri().to_string();
-        // CONNECT tunnels carry an authority-form URI (no scheme); label them
-        // "tunnel" so the UI can build an SSL column off `scheme`.
-        let scheme = if method == "CONNECT" {
-            "tunnel".to_string()
-        } else {
-            req.uri().scheme_str().unwrap_or("").to_string()
-        };
-        let req_content_type = req
-            .headers()
-            .get(header::CONTENT_TYPE)
-            .and_then(|v| v.to_str().ok())
-            .map(str::to_owned);
-        let req_size = req
-            .headers()
-            .get(header::CONTENT_LENGTH)
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.parse::<u64>().ok());
-        let entry = TrafficEntry {
-            id,
-            method,
-            url,
-            started_at_ms: now_ms(),
-            scheme,
-            req_content_type,
-            req_size,
-            // Resolve before emitting so the Request row carries attribution.
-            client: crate::client::process_name(_ctx.client_addr, self.proxy_addr),
-        };
+        // Resolve before emitting so the Request row carries attribution.
+        let entry = build_entry(id, &req, _ctx.client_addr, self.proxy_addr);
         // CONNECT tunnel: logged like Proxyman (with headers); we intercept,
         // so it answers 200 and the decrypted requests follow as their own
         // rows. Kept out of the pending queue so correlation stays correct.
@@ -354,26 +411,14 @@ impl HttpHandler for EmitHandler {
             (self.sink)(ProxyEvent::Request { entry });
         }
 
-        let encoding = req
-            .headers()
-            .get("content-encoding")
-            .and_then(|v| v.to_str().ok())
-            .map(str::to_owned);
+        let encoding = content_encoding(req.headers());
         let req = if decodable(encoding.as_deref()) {
             // Gate makes Err unreachable (all listed encodings are supported);
             // if it still happens the body is already lost, so fail the
             // exchange visibly instead of corrupting it.
-            match hudsucker::decode_request(req) {
+            match decoded_request(req) {
                 Ok(req) => req,
-                Err(e) => {
-                    eprintln!("decode_request failed unexpectedly: {e}");
-                    return RequestOrResponse::Response(
-                        Response::builder()
-                            .status(StatusCode::BAD_GATEWAY)
-                            .body(Body::empty())
-                            .expect("build 502 response"),
-                    );
-                }
+                Err(res) => return RequestOrResponse::Response(res),
             }
         } else {
             req
@@ -386,21 +431,11 @@ impl HttpHandler for EmitHandler {
     async fn handle_response(&mut self, _ctx: &HttpContext, res: Response<Body>) -> Response<Body> {
         let pending = self.pending.pop_front();
         let status = res.status().as_u16();
-        let encoding = res
-            .headers()
-            .get("content-encoding")
-            .and_then(|v| v.to_str().ok())
-            .map(str::to_owned);
+        let encoding = content_encoding(res.headers());
         let res = if decodable(encoding.as_deref()) {
-            match hudsucker::decode_response(res) {
+            match decoded_response(res) {
                 Ok(res) => res,
-                Err(e) => {
-                    eprintln!("decode_response failed unexpectedly: {e}");
-                    return Response::builder()
-                        .status(StatusCode::BAD_GATEWAY)
-                        .body(Body::empty())
-                        .expect("build 502 response");
-                }
+                Err(res) => return res,
             }
         } else {
             res
@@ -409,16 +444,8 @@ impl HttpHandler for EmitHandler {
         let res_headers = headers_text(res.headers());
         // Capture from the real headers before consuming the response into
         // parts / teeing the body, so values reflect what the upstream sent.
-        let res_content_type = res
-            .headers()
-            .get(header::CONTENT_TYPE)
-            .and_then(|v| v.to_str().ok())
-            .map(str::to_owned);
-        let res_size = res
-            .headers()
-            .get(header::CONTENT_LENGTH)
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.parse::<u64>().ok());
+        let res_content_type = header_value(res.headers(), header::CONTENT_TYPE.as_str());
+        let res_size = header_u64(res.headers());
         let (parts, body) = res.into_parts();
         let res_capture: Arc<Mutex<Vec<u8>>> = Arc::default();
         let body = tee(body, res_capture.clone());
@@ -472,10 +499,7 @@ impl HttpHandler for EmitHandler {
                 res_size: None,
             });
         }
-        Response::builder()
-            .status(StatusCode::BAD_GATEWAY)
-            .body(Body::empty())
-            .expect("build 502 response")
+        bad_gateway()
     }
 }
 

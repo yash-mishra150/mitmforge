@@ -14,6 +14,10 @@ export type TrafficRow = TrafficEntry_Serialize & {
 interface TrafficState {
   rows: TrafficRow[];
   selectedId: number | null;
+  comments: Record<string, string>;
+  pinned: number[];
+  hostFilter: string | null;
+  clientFilter: string | null;
   addRequest: (entry: TrafficEntry) => void;
   addResponse: (
     id: number,
@@ -23,7 +27,11 @@ interface TrafficState {
     resSize?: number | null,
   ) => void;
   select: (id: number | null) => void;
+  togglePin: (id: number) => void;
   clear: () => void;
+  setComment: (id: number, text: string) => void;
+  setHostFilter: (host: string | null) => void;
+  setClientFilter: (client: string | null) => void;
 }
 
 // Coalesce bursts of backend events into one store update per tick, so the
@@ -71,7 +79,7 @@ function schedule(set: (fn: (s: TrafficState) => Partial<TrafficState>) => void)
           rows[i] = patched;
         }
       }
-      return { rows };
+      return { rows, comments: s.comments };
     });
   }, 50);
 }
@@ -79,6 +87,10 @@ function schedule(set: (fn: (s: TrafficState) => Partial<TrafficState>) => void)
 export const useTraffic = create<TrafficState>((set) => ({
   rows: [],
   selectedId: null,
+  comments: {},
+  pinned: [],
+  hostFilter: null,
+  clientFilter: null,
   addRequest: (entry) => {
     pendingRequests.push(entry);
     schedule(set);
@@ -94,5 +106,21 @@ export const useTraffic = create<TrafficState>((set) => ({
     schedule(set);
   },
   select: (id) => set({ selectedId: id }),
-  clear: () => set({ rows: [], selectedId: null }),
+  togglePin: (id) => set((s) => {
+    const next = s.pinned.includes(id) ? s.pinned.filter((x) => x !== id) : [...s.pinned, id];
+    return { pinned: next };
+  }),
+  clear: () => set({ rows: [], selectedId: null, comments: {}, pinned: [], hostFilter: null, clientFilter: null }),
+  setComment: (id, text) => set((s) => {
+    const key = id.toString();
+    const newComments = { ...s.comments };
+    if (text) {
+      newComments[key] = text;
+    } else {
+      delete newComments[key];
+    }
+    return { comments: newComments };
+  }),
+  setHostFilter: (host) => set({ hostFilter: host }),
+  setClientFilter: (client) => set({ clientFilter: client }),
 }));
