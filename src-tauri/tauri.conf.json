@@ -15,10 +15,7 @@
         "title": "mitmforge",
         "width": 800,
         "height": 600,
-        "decorations": false,
-        "titleBar": {
-          "transparent": true
-        }
+        "decorations": false
       }
     ],
     "security": {
