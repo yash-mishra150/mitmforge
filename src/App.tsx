@@ -1,20 +1,29 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { commands, type ProxyEvent } from "./bindings";
 import { TrafficGrid } from "./features/traffic/TrafficGrid";
 import { Sidebar } from "./features/traffic/Sidebar";
 import { Overview } from "./features/traffic/Overview";
+import { SettingsModal } from "./features/traffic/SettingsModal";
 import { applyTheme, loadTheme } from "./theme/theme";
 import { useTraffic } from "./features/traffic/store";
+import { loadAiSettings } from "./features/ai/settings";
+import { analyzeSuspicious } from "./features/ai/analyze";
 import {
   Pause,
+  Play,
   StopCircle,
   Trash2,
+  Settings,
+  Minus,
+  Square,
+  X,
   User,
   ClipboardList,
-  Ruler,
-  Square,
+  Pencil,
+  Box,
   Diamond,
   FileText,
 } from "lucide-react";
@@ -22,9 +31,22 @@ import {
 const PROXY_EVENT = "proxy://event";
 const CONTENT_TABS = ["All", "HTTP", "HTTPS", "WebSocket", "JSON", "Form", "XML", "JS", "CSS", "GraphQL", "Document", "Media", "Other"] as const;
 
+const appWindow = getCurrentWindow();
+
+const minimize = () => void appWindow.minimize();
+const maximize = () => void appWindow.toggleMaximize();
+const close = () => void appWindow.close();
+
+const ICON_BTN = "rounded border border-line bg-surface p-1.5 text-muted hover:text-fg hover:border-[#2a2a2e]";
+
 export default function App() {
   const [view, setView] = useState<"log" | "overview">("log");
   const [contentTabs, setContentTabs] = useState<string[]>([]);
+  const [recording, setRecording] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [message, setMessage] = useState("");
+  const aiSettings = loadAiSettings();
 
   useEffect(() => {
     applyTheme(loadTheme());
@@ -42,75 +64,151 @@ export default function App() {
     };
   }, []);
 
+  const toggleRecording = () => {
+    const target = !recording;
+    setRecording(target);
+    void commands.trafficRecording(target).then(() => setMessage(target ? "Recording on" : "Recording paused"));
+  };
+
+  const clearTraffic = () => {
+    useTraffic.getState().clear();
+    setMessage("Traffic cleared");
+  };
+
+  const analyze = () => {
+    setAnalyzing(true);
+    analyzeSuspicious(useTraffic.getState().rows, aiSettings)
+      .then((found: Record<string, string>) => {
+        useTraffic.getState().setSuspicious(found);
+        const n = Object.keys(found).length;
+        setMessage(n > 0 ? `${n} suspicious request(s) flagged` : "Nothing suspicious found");
+      })
+      .catch((e: Error) => setMessage(String(e)))
+      .finally(() => setAnalyzing(false));
+  };
+
   const toggleContentTab = (type: string) => {
     setContentTabs((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [type]));
   };
 
   return (
     <div className="flex h-full flex-col bg-app text-fg">
-      {/* Top bar — left controls, center status, right placeholder icons */}
-      <header className="titlebar flex h-10 items-center justify-between border-b border-line bg-app px-4 select-none" data-tauri-drag-region>
-        {/* Left: control buttons */}
+      {/* Top bar — left: wired controls; center: status; right: settings + window controls */}
+      <header className="titlebar flex h-10 items-center justify-between border-b border-line bg-app px-3 select-none" data-tauri-drag-region>
+        {/* Left: wired control buttons */}
         <div className="flex items-center gap-1">
-          <button type="button" className="rounded border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]" title="Pause">
-            <Pause size={14} />
+          <button
+            type="button"
+            onClick={toggleRecording}
+            className={`${ICON_BTN} ${recording ? "text-success" : ""}`}
+            title={recording ? "Pause recording" : "Resume recording"}
+          >
+            {recording ? <Pause size={15} /> : <Play size={15} />}
           </button>
-          <button type="button" className="rounded border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]" title="Stop">
-            <StopCircle size={14} />
+          <button
+            type="button"
+            onClick={clearTraffic}
+            className={ICON_BTN}
+            title="Stop capture / clear traffic"
+          >
+            <StopCircle size={15} />
           </button>
-          <button type="button" className="rounded border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]" title="Clear">
-            <Trash2 size={14} />
+          <button
+            type="button"
+            onClick={clearTraffic}
+            className={ICON_BTN}
+            title="Clear traffic"
+          >
+            <Trash2 size={15} />
           </button>
         </div>
 
         {/* Center: app name + listening status */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 cursor-default">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" />
           <span className="text-xs font-medium text-fg">mitmforge | Listening on 127.0.0.1:8080 | HTTP/1.1</span>
         </div>
 
-        {/* Right: placeholder icons */}
+        {/* Right: settings gear + window controls (OpenIDEA size) */}
         <div className="flex items-center gap-1">
-          <button type="button" className="rounded border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]" title="Placeholder">
-            <User size={14} />
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="titlebar-button flex h-10 w-10 items-center justify-center rounded-none text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_8%,transparent)] hover:text-fg"
+            title="Settings (AI keys, theme)"
+          >
+            <Settings size={16} />
           </button>
-          <button type="button" className="rounded border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]" title="Placeholder">
-            <ClipboardList size={14} />
+          <button
+            type="button"
+            onClick={minimize}
+            className="titlebar-button flex h-10 w-10 items-center justify-center rounded-none text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_8%,transparent)] hover:text-fg"
+            title="Minimize"
+          >
+            <Minus size={16} />
           </button>
-          <button type="button" className="rounded border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]" title="Placeholder">
-            <Ruler size={14} />
-          </button>
-          <button type="button" className="rounded border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]" title="Placeholder">
+          <button
+            type="button"
+            onClick={maximize}
+            className="titlebar-button flex h-10 w-10 items-center justify-center rounded-none text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_8%,transparent)] hover:text-fg"
+            title="Maximize"
+          >
             <Square size={14} />
           </button>
-          <button type="button" className="rounded border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]" title="Placeholder">
-            <Diamond size={14} />
-          </button>
-          <button type="button" className="rounded border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]" title="Placeholder">
-            <FileText size={14} />
+          <button
+            type="button"
+            onClick={close}
+            className="titlebar-button flex h-10 w-10 items-center justify-center rounded-none text-muted hover:bg-red-600/20 hover:text-red-400"
+            title="Close"
+          >
+            <X size={16} />
           </button>
         </div>
       </header>
 
-      {/* Filter tabs row */}
-      <div className="flex h-8 items-center gap-1 border-b border-line bg-app px-2 overflow-x-auto scrollbar-hide">
-        {CONTENT_TABS.map((tab) => {
-          const isActive = contentTabs.includes(tab);
-          return (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => toggleContentTab(tab)}
-              className={`whitespace-nowrap rounded-md border border-line bg-surface px-2 py-0.5 text-[11px] font-medium text-muted transition-colors hover:text-fg hover:border-[#2a2a2e] ${
-                isActive
-                  ? "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent ring-1 ring-[color-mix(in_srgb,var(--mt-accent)_40%,transparent)]"
-                  : ""
-              }`}
-            >
-              {tab}
-            </button>
-          );
-        })}
+      {/* Below layer: filter tabs (left) + tool icons (right) */}
+      <div className="flex h-9 items-center justify-between border-b border-line bg-app px-2">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+          {CONTENT_TABS.map((tab) => {
+            const isActive = contentTabs.includes(tab);
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => toggleContentTab(tab)}
+                className={`whitespace-nowrap rounded-md border border-line bg-surface px-2 py-0.5 text-[11px] font-medium text-muted transition-colors hover:text-fg hover:border-[#2a2a2e] ${
+                  isActive
+                    ? "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent ring-1 ring-[color-mix(in_srgb,var(--mt-accent)_40%,transparent)]"
+                    : ""
+                }`}
+              >
+                {tab}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right: wired tool icons */}
+        <div className="flex items-center gap-1">
+          <button type="button" className={ICON_BTN} title="Apps view" onClick={() => setView("log")}>
+            <User size={14} />
+          </button>
+          <button type="button" className={ICON_BTN} title="Analyze suspicious" onClick={analyze} disabled={analyzing}>
+            <ClipboardList size={14} />
+          </button>
+          <button type="button" className={ICON_BTN} title="Overview" onClick={() => setView("overview")}>
+            <Pencil size={14} />
+          </button>
+          <button type="button" className={ICON_BTN} title="Log view" onClick={() => setView("log")}>
+            <Box size={14} />
+          </button>
+          <button type="button" className={ICON_BTN} title="Placeholder">
+            <Diamond size={14} />
+          </button>
+          <button type="button" className={ICON_BTN} title="Placeholder">
+            <FileText size={14} />
+          </button>
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -119,6 +217,13 @@ export default function App() {
           {view === "log" ? <TrafficGrid activeTabs={contentTabs} /> : <Overview />}
         </div>
       </div>
+
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {message && (
+        <div className="h-6 flex items-center px-3 text-[11px] text-muted border-t border-line bg-surface">
+          {message}
+        </div>
+      )}
     </div>
   );
 }
