@@ -16,6 +16,14 @@ import { Activity } from "lucide-react";
 const PROXY_EVENT = "proxy://event";
 const CONTENT_TABS = ["All", "JSON", "Form", "XML", "JS", "CSS", "GraphQL", "Document", "Media", "Other"] as const;
 
+const win = getCurrentWebviewWindow();
+
+const minimize = () => void win.minimize();
+const maximize = () => {
+  void win.isMaximized().then((m) => (m ? void win.unmaximize() : void win.maximize()));
+};
+const close = () => void win.close();
+
 export default function App() {
   const [view, setView] = useState<"log" | "overview">("log");
   const [contentTabs, setContentTabs] = useState<string[]>([]);
@@ -104,30 +112,38 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col bg-app text-fg">
-      {/* Minimal top strip: logo + app name + options */}
-      <header className="flex h-10 items-center justify-between border-b border-line bg-app px-4">
-        <div className="flex items-center gap-2">
+      {/* Custom title bar: drag region + window controls */}
+      <header className="titlebar flex h-10 items-center justify-between border-b border-line bg-app px-4 select-none">
+        <div className="flex items-center gap-2 cursor-default">
           <Activity size={16} className="text-accent" />
           <span className="text-xs font-medium text-fg tracking-tight">mitmforge</span>
         </div>
-        <nav className="flex items-center gap-1">
+        <div className="flex items-center gap-0">
           <button
             type="button"
-            onClick={() => setOptionsOpen(!optionsOpen)}
-            className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]"
-            title="Options"
+            onClick={minimize}
+            className="titlebar-button w-8 h-full rounded-none hover:bg-[color-mix(in_srgb,var(--mt-text)_8%,transparent)] text-xs text-muted"
+            title="Minimize"
           >
-            ⋮
+            −
           </button>
           <button
             type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]"
-            title="Settings"
+            onClick={maximize}
+            className="titlebar-button w-8 h-full rounded-none hover:bg-[color-mix(in_srgb,var(--mt-text)_8%,transparent)] text-xs text-muted"
+            title="Maximize"
           >
-            Settings
+            □
           </button>
-        </nav>
+          <button
+            type="button"
+            onClick={close}
+            className="titlebar-button w-8 h-full rounded-none hover:bg-red-600/20 hover:text-red-400 text-xs text-muted"
+            title="Close"
+          >
+            ✕
+          </button>
+        </div>
       </header>
 
       {/* Options dropdown */}
@@ -195,6 +211,14 @@ export default function App() {
           className="flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg"
         >
           Settings
+        </button>
+        <button
+          type="button"
+          onClick={() => setOptionsOpen(!optionsOpen)}
+          className="flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]"
+          title="Options"
+        >
+          ⋮
         </button>
       </div>
 

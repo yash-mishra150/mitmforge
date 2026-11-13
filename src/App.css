@@ -2,6 +2,14 @@
 @import "@fontsource-variable/jetbrains-mono";
 @import "tailwindcss";
 
+/* Custom title bar — drag region for frameless window */
+.titlebar {
+  -webkit-app-region: drag;
+}
+.titlebar-button {
+  -webkit-app-region: no-drag;
+}
+
 /* Theme tokens (src/theme/theme.tsx) → Tailwind semantic colors.
    Components use bg-app / bg-surface / border-line / text-fg / text-muted /
    text-accent / text-success / text-warning / text-danger / font-ui / font-mono. */
