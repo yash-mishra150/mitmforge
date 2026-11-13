@@ -17,6 +17,8 @@ import { Activity } from "lucide-react";
 const PROXY_EVENT = "proxy://event";
 const CONTENT_TABS = ["All", "JSON", "Form", "XML", "JS", "CSS", "GraphQL", "Document", "Media", "Other"] as const;
 
+const MENUBAR = ["File", "Edit", "View", "Navigate", "Code", "Refactor", "Build", "Run", "Git", "Tools", "Window", "Help"] as const;
+
 const appWindow = getCurrentWindow();
 
 const minimize = () => void appWindow.minimize();
@@ -33,6 +35,7 @@ export default function App() {
   const [analyzing, setAnalyzing] = useState(false);
   const [message, setMessage] = useState("");
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
   const aiSettings = loadAiSettings();
 
   useEffect(() => {
@@ -113,12 +116,12 @@ export default function App() {
   const openFile = () => {
     // Placeholder for File → Open (e.g. open a capture session / HAR)
     setMessage("Open file — not yet wired");
-    setOptionsOpen(false);
+    setOpenMenu(null);
   };
 
   return (
     <div className="flex h-full flex-col bg-app text-fg">
-      {/* Custom title bar — drag region + window controls (OpenIDEA style) */}
+      {/* Custom title bar — drag region + window controls */}
       <header className="titlebar flex h-10 items-center justify-between border-b border-line bg-app px-4 select-none" data-tauri-drag-region>
         <div className="flex items-center gap-2 cursor-default">
           <Activity size={16} className="text-accent" />
@@ -155,39 +158,17 @@ export default function App() {
         </div>
       </header>
 
-      {/* Options dropdown menu (File / Settings / About) */}
-      {optionsOpen && (
-        <div className="fixed top-10 right-4 z-50 rounded-md border border-line bg-surface p-1 shadow-[0_4px_12px_rgb(0_0_0_/_0.4)]">
-          <button
-            type="button"
-            onClick={openFile}
-            className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg"
-          >
-            File
-          </button>
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg"
-          >
-            Settings
-          </button>
-          <button
-            type="button"
-            onClick={() => setMessage("Mitmforge v0.1.0 — MITM debugging proxy")}
-            className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg"
-          >
-            About
-          </button>
-          <button
-            type="button"
-            onClick={close}
-            className="w-full text-left rounded-md px-3 py-1.5 text-xs text-danger hover:bg-[color-mix(in_srgb,var(--mt-danger)_15%,transparent)] hover:text-danger"
-          >
-            Exit
-          </button>
-        </div>
-      )}
+      {/* VS Code-style menubar */}
+      <nav className="flex h-8 items-center border-b border-line bg-surface px-3 text-[11px] text-muted uppercase">
+        {MENUBAR.map((label) => (
+          <MenuBarItem
+            key={label}
+            label={label}
+            isOpen={openMenu === label}
+            onToggle={() => setOpenMenu(openMenu === label ? null : label)}
+          />
+        ))}
+      </nav>
 
       {/* Pill action row */}
       <div className="flex h-8 items-center gap-1 border-b border-line bg-app px-2 overflow-x-auto scrollbar-hide">
@@ -250,6 +231,40 @@ export default function App() {
         </button>
       </div>
 
+      {/* Options dropdown menu (File / Settings / About) */}
+      {optionsOpen && (
+        <div className="fixed top-[38px] right-4 z-50 rounded-md border border-line bg-surface p-1 shadow-[0_4px_12px_rgb(0_0_0_/_0.4)]">
+          <button
+            type="button"
+            onClick={openFile}
+            className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg"
+          >
+            File
+          </button>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg"
+          >
+            Settings
+          </button>
+          <button
+            type="button"
+            onClick={() => setMessage("Mitmforge v0.1.0 — MITM debugging proxy")}
+            className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg"
+          >
+            About
+          </button>
+          <button
+            type="button"
+            onClick={close}
+            className="w-full text-left rounded-md px-3 py-1.5 text-xs text-danger hover:bg-[color-mix(in_srgb,var(--mt-danger)_15%,transparent)] hover:text-danger"
+          >
+            Exit
+          </button>
+        </div>
+      )}
+
       {/* Filter tab row */}
       <FilterBar activeTabs={contentTabs} allTabs={CONTENT_TABS} onContentTabToggle={toggleContentTab} />
 
@@ -264,6 +279,132 @@ export default function App() {
       {message && (
         <div className="h-6 flex items-center px-3 text-[11px] text-muted border-t border-line bg-surface">
           {message}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Single menubar item with a dropdown menu. */
+function MenuBarItem({
+  label,
+  isOpen,
+  onToggle,
+}: {
+  label: string;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      className="relative group"
+      onClick={onToggle}
+    >
+      <button
+        type="button"
+        className={`px-2 py-1 text-xs text-muted hover:text-fg hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] rounded ${isOpen ? "bg-[color-mix(in_srgb,var(--mt-text)_8%,transparent)]" : ""}`}
+      >
+        {label}
+      </button>
+      {isOpen && (
+        <div className="absolute top-full left-0 z-50 mt-1 min-w-[140px] rounded-md border border-line bg-surface p-1 shadow-[0_4px_12px_rgb(0_0_0_/_0.4)]">
+          {label === "File" && (
+            <>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Open file…</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Save</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Save as…</button>
+              <hr className="my-1 border-line" />
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-danger hover:bg-[color-mix(in_srgb,var(--mt-danger)_15%,transparent)] hover:text-danger">Exit</button>
+            </>
+          )}
+          {label === "Edit" && (
+            <>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Undo</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Redo</button>
+              <hr className="my-1 border-line" />
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Cut</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Copy</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Paste</button>
+            </>
+          )}
+          {label === "View" && (
+            <>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Sidebar</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Overview</button>
+              <hr className="my-1 border-line" />
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Dark theme</button>
+            </>
+          )}
+          {label === "Navigate" && (
+            <>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Back</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Forward</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Last edit location</button>
+              <hr className="my-1 border-line" />
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Declaration…</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Implementation…</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Type definition…</button>
+            </>
+          )}
+          {label === "Code" && (
+            <>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Super Method</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Test</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">File Structure</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">File Path</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Call Hierarchy</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Type Hierarchy</button>
+            </>
+          )}
+          {label === "Refactor" && (
+            <>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Next Method</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Previous Method</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Next Highlighted Error</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Previous Highlighted Error</button>
+            </>
+          )}
+          {label === "Build" && (
+            <>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Build project</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Rebuild project</button>
+            </>
+          )}
+          {label === "Run" && (
+            <>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Run</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Debug</button>
+            </>
+          )}
+          {label === "Git" && (
+            <>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Commit…</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Push</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Pull</button>
+            </>
+          )}
+          {label === "Tools" && (
+            <>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">AI Settings</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Theme editor</button>
+              <hr className="my-1 border-line" />
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Analyze suspicious</button>
+            </>
+          )}
+          {label === "Window" && (
+            <>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Minimize</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Maximize</button>
+              <hr className="my-1 border-line" />
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Close</button>
+            </>
+          )}
+          {label === "Help" && (
+            <>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">About</button>
+              <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">Documentation</button>
+            </>
+          )}
         </div>
       )}
     </div>
