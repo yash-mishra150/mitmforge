@@ -3,6 +3,8 @@ import { commands, type BodyText } from "../../platform/ipc";
 import type { TrafficRow } from "./store";
 import { useTraffic } from "./store";
 import { parseQueryParams } from "./selectors";
+import { explainRow } from "../ai/analyze";
+import { loadAiSettings } from "../ai/settings";
 
 const TABS = ["headers", "query", "raw", "bodies"] as const;
 type Tab = (typeof TABS)[number];
@@ -12,6 +14,9 @@ export function RowDetail({ row }: { row: TrafficRow }) {
   const [tab, setTab] = useState<Tab>("headers");
   const [body, setBody] = useState<BodyText | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [aiAnswer, setAiAnswer] = useState<string | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const pinned = useTraffic((s) => s.pinned);
   const togglePin = useTraffic((s) => s.togglePin);
   const isPinned = pinned.includes(row.id);
@@ -49,6 +54,32 @@ export function RowDetail({ row }: { row: TrafficRow }) {
         ))}
         <button
           type="button"
+          onClick={() => {
+            setAiBusy(true);
+            setAiAnswer(null);
+            setAiError(null);
+            void explainRow(
+              row,
+              {
+                req_headers: body?.req_headers ?? null,
+                res_headers: body?.res_headers ?? null,
+                req_body: body?.req_body ?? null,
+                res_body: body?.res_body ?? null,
+              },
+              loadAiSettings()
+            )
+              .then(setAiAnswer)
+              .catch((e) => setAiError(String(e)))
+              .finally(() => setAiBusy(false));
+          }}
+          disabled={aiBusy}
+          className={`px-2 py-1 ${aiBusy ? "text-neutral-400 cursor-not-allowed" : "text-neutral-500 hover:text-neutral-300"}`}
+          title="Ask AI to explain this exchange"
+        >
+          {aiBusy ? "Thinking…" : "Ask AI"}
+        </button>
+        <button
+          type="button"
           onClick={() => togglePin(row.id)}
           className={`ml-auto px-2 py-1 ${isPinned ? "text-amber-400" : "text-neutral-500 hover:text-neutral-300"}`}
           title={isPinned ? "Unpin" : "Pin to Favorites"}
@@ -65,6 +96,21 @@ export function RowDetail({ row }: { row: TrafficRow }) {
         {fetchError && <div className="text-rose-400">Error loading details: {fetchError}</div>}
         {!body && !fetchError && <div className="text-neutral-500">…</div>}
       </div>
+
+      {(aiAnswer || aiError) && (
+        <div className="p-2 border-t border-neutral-800">
+          <div className="border border-neutral-800 rounded p-2">
+            <div className="text-xs font-medium text-neutral-500 mb-1">AI</div>
+            {aiBusy ? (
+              <div className="text-neutral-400">Thinking…</div>
+            ) : aiAnswer ? (
+              <div className="text-neutral-300 whitespace-pre-wrap">{aiAnswer}</div>
+            ) : aiError ? (
+              <div className="text-rose-400 whitespace-pre-wrap">{aiError}</div>
+            ) : null}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
