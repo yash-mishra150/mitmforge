@@ -41,7 +41,7 @@ Single test: `cargo test --test proxy_engine` (binds 127.0.0.1:18080/18081, no n
 
 ## Conventions
 
-- Minimal function-first UI for now (raw text/JSON panels); design pass comes later — don't invest in styling.
+- UI style: "Linear/Vercel dark" — semantic tokens only (`bg-app`/`bg-surface`/`border-line`/`text-fg`/`text-muted`/`text-accent`/`text-success`/`text-warning`/`text-danger`/`font-ui`/`font-mono`), mapped from theme CSS vars in `src/App.css` (`@theme inline`). Never hardcode neutral/emerald/amber/rose classes; never inline colors. Active/selected = accent at 12–15% via `bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)]`. 1px borders (`border-line`), `rounded-md`, no shadows/gradients. Tokens live in `src/theme/theme.tsx` (Settings ▸ Theme edits them live).
 - New features: backend command + specta types first, frontend via `call(commands.x())` from `src/platform/ipc.ts`.
 - Add tests for engine-level logic (see `tests/proxy_engine.rs` pattern: real exchange through the proxy, local upstream, no network).
 - shortcut: comments in code marked `shortcut:` document known limits — upgrade them when the limit bites.

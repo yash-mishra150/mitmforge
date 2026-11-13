@@ -40,14 +40,14 @@ export function RowDetail({ row }: { row: TrafficRow }) {
   }, [row.id, row.status]);
 
   return (
-    <div className="flex h-64 shrink-0 flex-col border-t border-neutral-800 bg-neutral-950 text-xs">
-      <div className="flex shrink-0 items-center border-b border-neutral-800 px-1">
+    <div className="bg-surface border-t border-line flex h-64 shrink-0 flex-col text-xs">
+      <div className="flex shrink-0 items-center gap-1 px-2 py-1.5">
         {TABS.map((key) => (
           <button
             key={key}
             type="button"
             onClick={() => setTab(key)}
-            className={`px-3 py-2 capitalize ${tab === key ? "border-b-2 border-emerald-500 text-emerald-400" : "text-neutral-400 hover:text-neutral-200"}`}
+            className={`rounded-md px-3 py-1 text-xs capitalize ${tab === key ? "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent" : "text-muted hover:text-fg hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)]"}`}
           >
             {key}
           </button>
@@ -73,7 +73,7 @@ export function RowDetail({ row }: { row: TrafficRow }) {
               .finally(() => setAiBusy(false));
           }}
           disabled={aiBusy}
-          className={`px-2 py-1 ${aiBusy ? "text-neutral-400 cursor-not-allowed" : "text-neutral-500 hover:text-neutral-300"}`}
+          className={`px-2 py-1 ${aiBusy ? "text-muted cursor-not-allowed" : "text-muted hover:text-accent"}`}
           title="Ask AI to explain this exchange"
         >
           {aiBusy ? "Thinking…" : "Ask AI"}
@@ -81,7 +81,7 @@ export function RowDetail({ row }: { row: TrafficRow }) {
         <button
           type="button"
           onClick={() => togglePin(row.id)}
-          className={`ml-auto px-2 py-1 ${isPinned ? "text-amber-400" : "text-neutral-500 hover:text-neutral-300"}`}
+          className={`ml-auto px-2 py-1 ${isPinned ? "text-warning" : "text-muted hover:text-fg"}`}
           title={isPinned ? "Unpin" : "Pin to Favorites"}
         >
           {isPinned ? "★ Pinned" : "☆ Pin"}
@@ -93,20 +93,20 @@ export function RowDetail({ row }: { row: TrafficRow }) {
         {tab === "raw" && <TwoPane mono left="Request" right="Response" leftText={body?.req_headers ?? null} rightText={body?.res_headers ?? null} />}
         {tab === "bodies" && <TwoPane left="Request body" right="Response body" leftText={body?.req_body ?? null} rightText={body?.res_body ?? null} />}
         {tab === "query" && <QueryParams url={row.url} />}
-        {fetchError && <div className="text-rose-400">Error loading details: {fetchError}</div>}
-        {!body && !fetchError && <div className="text-neutral-500">…</div>}
+        {fetchError && <div className="text-danger">Error loading details: {fetchError}</div>}
+        {!body && !fetchError && <div className="text-muted">…</div>}
       </div>
 
       {(aiAnswer || aiError) && (
-        <div className="p-2 border-t border-neutral-800">
-          <div className="border border-neutral-800 rounded p-2">
-            <div className="text-xs font-medium text-neutral-500 mb-1">AI</div>
+        <div className="p-2 border-t border-line">
+          <div className="border border-line rounded-md bg-app p-2">
+            <div className="text-[10px] uppercase tracking-wider text-muted mb-1">AI</div>
             {aiBusy ? (
-              <div className="text-neutral-400">Thinking…</div>
+              <div className="text-muted">Thinking…</div>
             ) : aiAnswer ? (
-              <div className="text-neutral-300 whitespace-pre-wrap">{aiAnswer}</div>
+              <div className="text-fg whitespace-pre-wrap">{aiAnswer}</div>
             ) : aiError ? (
-              <div className="text-rose-400 whitespace-pre-wrap">{aiError}</div>
+              <div className="text-danger whitespace-pre-wrap">{aiError}</div>
             ) : null}
           </div>
         </div>
@@ -138,8 +138,8 @@ function TwoPane({
         ] as const
       ).map(([label, text]) => (
         <div key={label} className="overflow-auto">
-          <div className="mb-1 text-neutral-500">{label}</div>
-          <pre className={`whitespace-pre-wrap break-all text-neutral-300 ${mono ? "font-mono" : ""}`}>
+          <div className="text-[10px] uppercase tracking-wider text-muted mb-1">{label}</div>
+          <pre className={`whitespace-pre-wrap break-all text-fg ${mono ? "font-mono" : ""}`}>
             {text || "—"}
           </pre>
         </div>
@@ -151,13 +151,13 @@ function TwoPane({
 /** Decoded query-string parameters as a key/value list. */
 function QueryParams({ url }: { url: string }) {
   const params = parseQueryParams(url);
-  if (params.length === 0) return <div className="text-neutral-500">No query parameters</div>;
+  if (params.length === 0) return <div className="text-muted">No query parameters</div>;
   return (
     <div>
       {params.map((p) => (
         <div key={p.key + p.value} className="flex gap-3">
-          <span className="w-64 shrink-0 break-all text-neutral-300">{p.key}</span>
-          <span className="break-all text-neutral-400">{p.value}</span>
+          <span className="w-64 shrink-0 break-all text-fg">{p.key}</span>
+          <span className="break-all text-muted">{p.value}</span>
         </div>
       ))}
     </div>

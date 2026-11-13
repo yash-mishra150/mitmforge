@@ -18,6 +18,7 @@ export interface ThemeColors {
 export interface Theme {
   colors: ThemeColors;
   fontFamily: string;
+  monoFontFamily: string;
   fontSize: number;
 }
 
@@ -31,18 +32,19 @@ export interface Theme {
  */
 export const DEFAULT_THEME: Theme = {
   colors: {
-    bg: "#171717",
-    surface: "#0a0a0a",
-    border: "#262626",
-    text: "#e5e5e5",
-    textMuted: "#a3a3a3",
-    accent: "#34d399",
-    success: "#34d399",
+    bg: "#09090b",
+    surface: "#101012",
+    border: "#1f1f23",
+    text: "#fafafa",
+    textMuted: "#71717a",
+    accent: "#8b5cf6",
+    success: "#4ade80",
     warning: "#fbbf24",
-    danger: "#fb7185",
+    danger: "#f87171",
   },
-  fontFamily: '"Cascadia Mono", "Consolas", ui-monospace, monospace',
-  fontSize: 12,
+  fontFamily: '"Inter Variable", Inter, system-ui, sans-serif',
+  monoFontFamily: '"JetBrains Mono Variable", "JetBrains Mono", "Cascadia Mono", Consolas, monospace',
+  fontSize: 13,
 };
 
 /**
@@ -89,6 +91,7 @@ export function loadTheme(): Theme {
       } : {}),
     },
     fontFamily: typeof parsed.fontFamily === "string" ? parsed.fontFamily : DEFAULT_THEME.fontFamily,
+    monoFontFamily: typeof parsed.monoFontFamily === "string" ? parsed.monoFontFamily : DEFAULT_THEME.monoFontFamily,
     fontSize: typeof parsed.fontSize === "number" && parsed.fontSize > 0 ? parsed.fontSize : DEFAULT_THEME.fontSize,
   };
 }
@@ -109,6 +112,7 @@ export function applyTheme(theme: Theme): void {
     root.style.setProperty(cssVar, theme.colors[key]);
   });
   root.style.setProperty("--mt-font", theme.fontFamily);
+  root.style.setProperty("--mt-font-mono", theme.monoFontFamily);
   root.style.setProperty("--mt-font-size", `${theme.fontSize}px`);
 }
 
@@ -144,19 +148,28 @@ export function ThemeEditor({ value, onChange }: { value: Theme; onChange: (next
   };
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-3 p-4">
       <div className="flex items-center justify-between gap-2">
-        <label className="text-xs text-neutral-500">Font family</label>
-        <input type="text" value={internal.fontFamily} onChange={handleFontFamilyChange} className="bg-neutral-800 rounded px-2 py-1 text-xs text-neutral-200" />
+        <label className="text-[10px] uppercase tracking-wider text-muted">Font family</label>
+        <input type="text" value={internal.fontFamily} onChange={handleFontFamilyChange} className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg focus:border-accent focus:outline-none" />
       </div>
       <div className="flex items-center justify-between gap-2">
-        <label className="text-xs text-neutral-500">Font size (px)</label>
-        <input type="number" min="8" max="24" value={internal.fontSize} onChange={handleFontSizeChange} className="bg-neutral-800 rounded px-2 py-1 text-xs text-neutral-200" />
+        <label className="text-[10px] uppercase tracking-wider text-muted">Mono font</label>
+        <input type="text" value={internal.monoFontFamily} onChange={(e) => {
+          const next = { ...internal, monoFontFamily: e.target.value };
+          setInternal(next);
+          onChange(next);
+          applyTheme(next);
+        }} className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg focus:border-accent focus:outline-none" />
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <label className="text-[10px] uppercase tracking-wider text-muted">Font size (px)</label>
+        <input type="number" min="8" max="24" value={internal.fontSize} onChange={handleFontSizeChange} className="rounded-md border border-line bg-surface px-2 py-1 text-xs text-fg focus:border-accent focus:outline-none" />
       </div>
       {COLOR_TOKENS.map(({ key, label }) => (
         <div key={key} className="flex items-center justify-between gap-2">
-          <label className="text-xs text-neutral-500">{label}</label>
-          <input type="color" value={internal.colors[key]} onChange={handleColorChange(key)} className="w-8 h-8 p-0 border-0 bg-transparent" />
+          <label className="text-[10px] uppercase tracking-wider text-muted">{label}</label>
+          <input type="color" value={internal.colors[key]} onChange={handleColorChange(key)} className="h-6 w-8 cursor-pointer rounded border-0 bg-transparent p-0" />
         </div>
       ))}
     </div>

@@ -1,4 +1,23 @@
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
 @import "tailwindcss";
+
+/* Theme tokens (src/theme/theme.tsx) → Tailwind semantic colors.
+   Components use bg-app / bg-surface / border-line / text-fg / text-muted /
+   text-accent / text-success / text-warning / text-danger / font-ui / font-mono. */
+@theme inline {
+  --color-app: var(--mt-bg);
+  --color-surface: var(--mt-surface);
+  --color-line: var(--mt-border);
+  --color-fg: var(--mt-text);
+  --color-muted: var(--mt-text-muted);
+  --color-accent: var(--mt-accent);
+  --color-success: var(--mt-success);
+  --color-warning: var(--mt-warning);
+  --color-danger: var(--mt-danger);
+  --font-ui: var(--mt-font);
+  --font-mono: var(--mt-font-mono);
+}
 
 html,
 body,
@@ -6,11 +25,25 @@ body,
   height: 100%;
 }
 
-/* Theme tokens (see src/theme/theme.tsx). Components migrate to these
-   variables (e.g. bg-[var(--mt-bg)]) during the design pass. */
 body {
-  background: var(--mt-bg, #171717);
-  color: var(--mt-text, #e5e5e5);
-  font-family: var(--mt-font, "Cascadia Mono", "Consolas", ui-monospace, monospace);
-  font-size: var(--mt-font-size, 12px);
+  background: var(--mt-bg, #09090b);
+  color: var(--mt-text, #fafafa);
+  font-family: var(--mt-font, "Inter Variable", Inter, system-ui, sans-serif);
+  font-size: var(--mt-font-size, 13px);
+}
+
+/* Modern scrollbars: thin, quiet, accent on hover. */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--mt-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mt-text-muted);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }

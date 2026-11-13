@@ -16,7 +16,7 @@ export function Sidebar() {
   const pinnedData = pinnedRows(rows, pinned);
 
   return (
-    <div className="flex w-64 shrink-0 flex-col overflow-auto border-r border-neutral-800 bg-neutral-900">
+    <div className="flex w-56 shrink-0 flex-col overflow-auto border-r border-line bg-app">
       <Section title="Apps">
         {appData.length === 0 ? (
           <Empty />
@@ -40,8 +40,8 @@ export function Sidebar() {
             return (
               <Item key={id} onClick={() => select(id)}>
                 <div className="flex flex-col">
-                  <div>{row.method} {row.url.slice(0, 40)}</div>
-                  <div className="text-xs text-neutral-500">⚠ {reason}</div>
+                  <div className="text-fg">{row.method} {row.url.slice(0, 40)}</div>
+                  <div className="text-xs text-danger">⚠ {reason}</div>
                 </div>
               </Item>
             );
@@ -58,7 +58,7 @@ export function Sidebar() {
               <Item onClick={() => setHostFilter(item.host)} count={item.count}>
                 {item.host}
               </Item>
-              <div className="ml-3 border-l border-neutral-800 pl-2">
+              <div className="ml-3 border-l border-line pl-2">
                 {item.paths.map((p) => (
                   <Item key={p.path} onClick={() => setHostFilter(item.host)} count={p.count} small>
                     {p.path}
@@ -88,9 +88,9 @@ export function Sidebar() {
 /** Section heading + content block. */
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="border-b border-neutral-800">
-      <div className="px-3 py-1 text-xs uppercase tracking-wide text-neutral-500">{title}</div>
-      <div className="pb-1">{children}</div>
+    <div>
+      <div className="px-3 pt-3 pb-1 text-[10px] font-medium uppercase tracking-wider text-muted">{title}</div>
+      <div>{children}</div>
     </div>
   );
 }
@@ -110,15 +110,15 @@ function Item({
   return (
     <div
       onClick={onClick}
-      className={`flex cursor-pointer items-center justify-between px-3 hover:bg-neutral-800 ${small ? "py-0.5 text-xs text-neutral-400" : "py-1 text-sm text-neutral-300"}`}
+      className={`flex cursor-pointer items-center justify-between px-3 rounded-md hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] ${small ? "py-0.5 text-xs text-muted" : "py-1 text-sm text-fg"}`}
     >
       <span className="truncate">{children}</span>
-      {count !== undefined && <span className="text-neutral-600">{count}</span>}
+      {count !== undefined && <span className="text-muted">{count}</span>}
     </div>
   );
 }
 
 /** Empty-state placeholder. */
 function Empty() {
-  return <div className="px-3 py-1 text-xs text-neutral-600">—</div>;
+  return <div className="px-3 py-1 text-xs text-muted opacity-60">—</div>;
 }

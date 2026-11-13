@@ -39,11 +39,11 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px]"
       onClick={close}
     >
       <div
-        className="w-96 rounded border border-neutral-800 bg-neutral-900 p-4"
+        className="w-96 rounded-lg border border-line bg-app p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-1">
@@ -52,7 +52,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className={`rounded px-2 py-1 text-xs capitalize ${tab === t ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125`}
+              className={`rounded-md px-3 py-1 text-xs capitalize ${tab === t ? "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent" : "border border-line bg-surface text-muted hover:text-fg hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)]"}`}
             >
               {t}
             </button>
@@ -60,7 +60,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
           <button
             type="button"
             onClick={close}
-            className="ml-auto text-xs text-neutral-400 hover:text-neutral-200"
+            className="ml-auto text-xs text-muted hover:text-fg"
           >
             ×
           </button>
@@ -73,7 +73,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                 type="text"
                 value={settings.baseUrl}
                 onChange={(e) => setSettings({ ...settings, baseUrl: e.target.value })}
-                className="w-full rounded bg-neutral-800 px-2 py-1 text-xs text-neutral-200"
+                className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-xs text-fg placeholder:text-muted focus:border-accent focus:outline-none"
               />
             </Field>
             <Field label="API key">
@@ -81,7 +81,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                 type="password"
                 value={settings.apiKey}
                 onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
-                className="w-full rounded bg-neutral-800 px-2 py-1 text-xs text-neutral-200"
+                className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-xs text-fg placeholder:text-muted focus:border-accent focus:outline-none"
               />
             </Field>
             <Field label="Model">
@@ -89,10 +89,10 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                 type="text"
                 value={settings.model}
                 onChange={(e) => setSettings({ ...settings, model: e.target.value })}
-                className="w-full rounded bg-neutral-800 px-2 py-1 text-xs text-neutral-200"
+                className="w-full rounded-md border border-line bg-surface px-2 py-1.5 text-xs text-fg placeholder:text-muted focus:border-accent focus:outline-none"
               />
             </Field>
-            <p className="text-xs text-neutral-600">
+            <p className="text-xs text-muted opacity-70">
               Any OpenAI-compatible endpoint works (OpenRouter, LM Studio, Ollama…).
             </p>
           </div>
@@ -107,7 +107,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                 setTheme(DEFAULT_THEME);
                 applyTheme(DEFAULT_THEME);
               }}
-              className="rounded bg-neutral-800 px-2 py-1 text-xs text-neutral-400 hover:brightness-125"
+              className="rounded-md border border-line bg-surface px-2 py-1.5 text-xs text-muted hover:text-fg"
             >
               Reset to default
             </button>
@@ -118,14 +118,14 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
           <button
             type="button"
             onClick={save}
-            className="flex-1 rounded bg-emerald-900/50 px-2 py-1 text-xs text-emerald-300"
+            className="flex-1 rounded-md bg-accent px-2 py-1.5 text-xs font-medium text-app hover:opacity-90"
           >
             Save
           </button>
           <button
             type="button"
             onClick={close}
-            className="flex-1 rounded bg-neutral-800 px-2 py-1 text-xs text-neutral-400"
+            className="flex-1 rounded-md border border-line bg-surface px-2 py-1.5 text-xs text-muted hover:text-fg"
           >
             Cancel
           </button>
@@ -139,7 +139,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-xs text-neutral-500">{label}</label>
+      <label className="text-[10px] uppercase tracking-wider text-muted">{label}</label>
       {children}
     </div>
   );

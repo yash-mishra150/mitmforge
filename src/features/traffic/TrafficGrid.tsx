@@ -11,19 +11,19 @@ import { loadAiSettings } from "../ai/settings";
 import { SettingsModal } from "./SettingsModal";
 
 const METHOD_COLORS: Record<string, string> = {
-  GET: "text-emerald-400",
-  POST: "text-sky-400",
-  PUT: "text-amber-400",
-  PATCH: "text-amber-400",
-  DELETE: "text-rose-400",
+  GET: "bg-[color-mix(in_srgb,var(--mt-success)_15%,transparent)] text-success",
+  POST: "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent",
+  PUT: "bg-[color-mix(in_srgb,var(--mt-warning)_15%,transparent)] text-warning",
+  PATCH: "bg-[color-mix(in_srgb,var(--mt-warning)_15%,transparent)] text-warning",
+  DELETE: "bg-[color-mix(in_srgb,var(--mt-danger)_15%,transparent)] text-danger",
 };
 
 function statusColor(status: number | null): string {
-  if (status === null) return "text-neutral-600";
-  if (status < 300) return "text-emerald-400";
-  if (status < 400) return "text-sky-400";
-  if (status < 500) return "text-amber-400";
-  return "text-rose-400";
+  if (status === null) return "text-muted";
+  if (status < 300) return "bg-[color-mix(in_srgb,var(--mt-success)_15%,transparent)] text-success";
+  if (status < 400) return "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent";
+  if (status < 500) return "bg-[color-mix(in_srgb,var(--mt-warning)_15%,transparent)] text-warning";
+  return "bg-[color-mix(in_srgb,var(--mt-danger)_15%,transparent)] text-danger";
 }
 
 function splitUrl(url: string): { host: string; path: string } {
@@ -82,24 +82,24 @@ const RowView = memo(function RowView({
         height: size,
         transform: `translateY(${start}px)`,
       }}
-      className={`grid cursor-pointer ${GRID_COLS} items-center gap-x-3 border-b border-neutral-800/50 px-3 ${selected ? "bg-neutral-800" : "hover:bg-neutral-800/50"}`}
+      className={`grid cursor-pointer ${GRID_COLS} items-center gap-x-3 border-b border-line px-3 ${selected ? "bg-[color-mix(in_srgb,var(--mt-accent)_10%,transparent)] shadow-[inset_2px_0_0_var(--mt-accent)]" : "hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)]"}`}
       data-index={index}
     >
-      <span className={row.status === null ? "text-amber-400" : "text-emerald-400"}>
+      <span className={row.status === null ? "text-warning" : "text-success"}>
         {row.status === null ? "●" : "✓"}
-        {suspiciousReason && <span className="ml-1 text-rose-400" title={suspiciousReason}>⚠</span>}
+        {suspiciousReason && <span className="ml-1 text-danger" title={suspiciousReason}>⚠</span>}
       </span>
-      <span className="text-neutral-600">{row.id}</span>
-      <span className={METHOD_COLORS[row.method] ?? "text-neutral-300"}>{row.method}</span>
-      <span className={statusColor(row.status)}>{row.status ?? "…"}</span>
-      <span className="text-neutral-500">{row.durationMs ?? ""}</span>
+      <span className="text-muted">{row.id}</span>
+      <span className={`inline-flex h-[18px] items-center rounded px-1.5 text-[11px] font-medium ${METHOD_COLORS[row.method] ?? "text-fg"}`}>{row.method}</span>
+      <span className={`inline-flex h-[18px] items-center rounded px-1.5 text-[11px] font-medium ${statusColor(row.status)}`}>{row.status ?? "…"}</span>
+      <span className="text-muted">{row.durationMs ?? ""}</span>
       <span className="truncate">
-        <span className="text-neutral-500">{host}</span>
-        <span className="text-neutral-300">{path}</span>
+        <span className="text-muted">{host}</span>
+        <span className="text-fg">{path}</span>
       </span>
-      <span className="text-neutral-600">{time(row.started_at_ms)}</span>
-      <span className="text-neutral-600">{row.scheme === "https" ? "SSL" : "–"}</span>
-      <span className="text-neutral-500 truncate">{row.client ?? "—"}</span>
+      <span className="text-muted">{time(row.started_at_ms)}</span>
+      <span className="text-muted">{row.scheme === "https" ? "SSL" : "–"}</span>
+      <span className="text-muted truncate">{row.client ?? "—"}</span>
       {editing ? (
         <input
           autoFocus
@@ -110,11 +110,11 @@ const RowView = memo(function RowView({
             if (e.key === "Enter") onCommitEdit(row.id, e.currentTarget.value);
             else if (e.key === "Escape") onCancelEdit();
           }}
-          className="w-full rounded bg-neutral-800 px-1 text-xs text-neutral-200 outline-none"
+          className="w-full rounded-md border border-line bg-surface px-1 text-xs text-fg outline-none"
         />
       ) : (
         <span
-          className="truncate text-neutral-400"
+          className="truncate text-muted"
           title={comment ? undefined : "Click to add a comment"}
           onClick={(e) => {
             e.stopPropagation();
@@ -266,20 +266,20 @@ export function TrafficGrid() {
   );
 
   return (
-    <div className="flex h-full flex-col bg-neutral-900 text-neutral-200">
-      <header className="flex items-center justify-between border-b border-neutral-800 px-3 py-2 text-sm">
+    <div className="flex h-full flex-col bg-app text-fg">
+      <header className="flex items-center justify-between border-b border-line bg-app px-3 py-2 text-sm">
         <span className="flex items-center gap-2 font-medium">
           <span
-            className={`inline-block h-2 w-2 rounded-full ${status?.listening ? "bg-emerald-500" : "bg-neutral-600"}`}
+            className={`inline-block h-2 w-2 rounded-full ${status?.listening ? "bg-accent" : "bg-line"}`}
           />
           MitmForge — proxy 127.0.0.1:8080
         </span>
         <span className="flex items-center gap-2 text-xs">
-          {message && <span className="max-w-96 truncate text-neutral-400">{message}</span>}
+          {message && <span className="max-w-96 truncate text-muted">{message}</span>}
           <button
             type="button"
             onClick={toggleSystem}
-            className={`flex items-center gap-1 rounded px-2 py-1 ${systemOn ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125`}
+            className={`flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg ${systemOn ? "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent" : ""} hover:brightness-125`}
           >
             {systemOn ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
             System proxy {systemOn ? "on" : "off"}
@@ -289,7 +289,7 @@ export function TrafficGrid() {
             onClick={trustCa}
             disabled={status?.ca_trusted === true}
             title={status?.ca_trusted ? "Certificate already trusted" : undefined}
-            className={`flex items-center gap-1 rounded px-2 py-1 ${status?.ca_trusted ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125 disabled:hover:brightness-100`}
+            className={`flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg ${status?.ca_trusted ? "bg-[color-mix(in_srgb,var(--mt-success)_15%,transparent)] text-success" : ""} hover:brightness-125 disabled:hover:brightness-100`}
           >
             <ShieldCheck size={14} />
             {status?.ca_trusted ? "CA trusted" : "Trust CA"}
@@ -297,7 +297,7 @@ export function TrafficGrid() {
           <button
             type="button"
             onClick={toggleRecording}
-            className={`flex items-center gap-1 rounded px-2 py-1 ${recording ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125`}
+            className={`flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg ${recording ? "bg-[color-mix(in_srgb,var(--mt-success)_15%,transparent)] text-success" : ""} hover:brightness-125`}
           >
             {recording ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
             {recording ? "Recording on" : "Recording off"}
@@ -305,7 +305,7 @@ export function TrafficGrid() {
           <button
             type="button"
             onClick={toggleAutoSave}
-            className={`flex items-center gap-1 rounded px-2 py-1 ${autoSave ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125`}
+            className={`flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg ${autoSave ? "bg-[color-mix(in_srgb,var(--mt-success)_15%,transparent)] text-success" : ""} hover:brightness-125`}
           >
             {autoSave ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
             {autoSave ? "Auto-save on" : "Auto-save off"}
@@ -315,24 +315,23 @@ export function TrafficGrid() {
             onClick={analyze}
             disabled={analyzing || rows.length === 0}
             title="Ask AI to flag suspicious requests"
-            className={`flex items-center gap-1 rounded px-2 py-1 ${analyzing ? "bg-neutral-800 text-neutral-500" : "bg-neutral-800 text-neutral-400"} hover:brightness-125 disabled:hover:brightness-100`}
+            className={`flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg ${analyzing ? "text-muted opacity-70" : ""} hover:brightness-125 disabled:hover:brightness-100`}
           >
             {analyzing ? "Analyzing…" : "Analyze suspicious"}
           </button>
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}
-            className="flex items-center gap-1 rounded px-2 py-1 bg-neutral-800 text-neutral-400 hover:brightness-125"
+            className="flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg"
             title="AI settings, theme (fonts, colors)"
           >
             Settings
           </button>
-          <span className="text-neutral-500">{rows.length} req</span>
           <button
             type="button"
             onClick={clear}
             aria-label="Clear captured traffic"
-            className="rounded p-1 text-neutral-400 hover:bg-neutral-800"
+            className="rounded-md border border-line bg-surface p-1 text-muted hover:border-[#2a2a2e] hover:text-fg"
           >
             <Trash2 size={14} />
           </button>
@@ -349,12 +348,12 @@ export function TrafficGrid() {
       />
 
       {(hostFilter !== null || clientFilter !== null) && (
-        <div className="flex items-center gap-2 border-b border-neutral-800 px-3 py-1 text-xs">
+        <div className="flex items-center gap-2 border-b border-line px-3 py-1 text-xs">
           {hostFilter !== null && (
             <button
               type="button"
               onClick={() => setHostFilter(null)}
-              className="rounded bg-neutral-800 px-2 py-0.5 text-neutral-300 hover:bg-neutral-700"
+              className="rounded-md border border-line bg-surface px-2 py-0.5 text-fg hover:border-[#2a2a2e]"
               title="Clear host filter"
             >
               host: {hostFilter} ✕
@@ -364,17 +363,17 @@ export function TrafficGrid() {
             <button
               type="button"
               onClick={() => setClientFilter(null)}
-              className="rounded bg-neutral-800 px-2 py-0.5 text-neutral-300 hover:bg-neutral-700"
+              className="rounded-md border border-line bg-surface px-2 py-0.5 text-fg hover:border-[#2a2a2e]"
               title="Clear app filter"
             >
               app: {clientFilter} ✕
             </button>
           )}
-          <span className="text-neutral-500">{filteredRows.length} shown</span>
+          <span className="text-muted">{filteredRows.length} shown</span>
         </div>
       )}
 
-      <div className={`grid ${GRID_COLS} gap-x-3 border-b border-neutral-800 px-3 py-1 text-xs tracking-wide text-neutral-500 uppercase`}>
+      <div className={`grid ${GRID_COLS} gap-x-3 border-b border-line px-3 py-1 text-xs tracking-wide text-muted uppercase`}>
         <span />
         <span>#</span>
         <span>Method</span>
@@ -410,6 +409,26 @@ export function TrafficGrid() {
       </div>
 
       {selected && <RowDetail row={selected} />}
+
+      <div className="flex h-7 shrink-0 items-center justify-between border-t border-line bg-app px-3 text-[11px] text-muted">
+        <span className="flex items-center gap-2">
+          <span
+            className={`inline-block h-1.5 w-1.5 rounded-full ${status?.listening ? "bg-accent" : "bg-line"}`}
+          />
+          proxy 127.0.0.1:8080
+          {systemOn && (
+            <span className="rounded bg-[color-mix(in_srgb,var(--mt-accent)_15%,transparent)] px-1.5 text-accent">
+              SYS
+            </span>
+          )}
+          <span className={recording ? "text-success" : "text-muted opacity-70"}>
+            {recording ? "REC" : "PAUSED"}
+          </span>
+        </span>
+        <span>
+          {filteredRows.length}/{rows.length} req
+        </span>
+      </div>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>

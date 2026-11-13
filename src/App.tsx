@@ -31,13 +31,13 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-1 border-b border-neutral-800 bg-neutral-900 px-2 py-1 text-xs">
+      <div className="flex h-10 items-center gap-1 border-b border-line bg-app px-2">
         {(["log", "overview"] as const).map((view) => (
           <button
             key={view}
             type="button"
             onClick={() => setView(view)}
-            className={`rounded px-2 py-1 capitalize ${view === "log" ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125`}
+            className={`rounded-md px-2 py-1 text-xs capitalize ${view === "log" ? "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent" : "text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg"}`}
           >
             {view}
           </button>

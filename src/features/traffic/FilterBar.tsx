@@ -30,10 +30,10 @@ export function FilterBar({
   activeCount,
 }: FilterBarProps) {
   return (
-    <div className="mb-2 flex h-8 flex-wrap items-center gap-2 border-b border-neutral-800 px-3 py-1 text-xs">
+    <div className="flex h-9 flex-wrap items-center gap-2 border-b border-line bg-app px-3 text-xs">
       {/* Content type filters */}
       <div className="flex items-center gap-1.5">
-        <span className="text-neutral-500">Content:</span>
+        <span className="text-[10px] uppercase tracking-wider text-muted">CONTENT</span>
         {CONTENT_TYPES.map(({ value, label }) => {
           const isActive = contentFilters.includes(value);
           return (
@@ -41,9 +41,9 @@ export function FilterBar({
               key={value}
               type="button"
               onClick={() => onContentFilterToggle(value)}
-              className={`rounded-full px-2 py-0.5 transition-colors ${isActive
-                ? "bg-emerald-900/80 text-emerald-200 ring-1 ring-emerald-400/50"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"}`}
+              className={`rounded-md border border-line bg-surface px-2 py-0.5 text-[11px] text-muted transition-colors hover:text-fg hover:border-[#2a2a2e] ${isActive
+                ? "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent ring-1 ring-[color-mix(in_srgb,var(--mt-accent)_40%,transparent)]"
+                : ""}`}
             >
               {label}
             </button>
@@ -53,7 +53,7 @@ export function FilterBar({
 
       {/* Status filters */}
       <div className="flex items-center gap-1.5">
-        <span className="text-neutral-500">Status:</span>
+        <span className="text-[10px] uppercase tracking-wider text-muted">STATUS</span>
         {[1, 2, 3, 4, 5].map(cat => {
           const isActive = statusFilters.includes(cat);
           return (
@@ -61,9 +61,9 @@ export function FilterBar({
               key={cat}
               type="button"
               onClick={() => onStatusFilterToggle(cat)}
-              className={`rounded-full px-2 py-0.5 transition-colors ${isActive
-                ? "bg-emerald-900/80 text-emerald-200 ring-1 ring-emerald-400/50"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"}`}
+              className={`rounded-md border border-line bg-surface px-2 py-0.5 text-[11px] text-muted transition-colors hover:text-fg hover:border-[#2a2a2e] ${isActive
+                ? "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent ring-1 ring-[color-mix(in_srgb,var(--mt-accent)_40%,transparent)]"
+                : ""}`}
             >
               {cat}xx
             </button>
@@ -76,7 +76,7 @@ export function FilterBar({
         <button
           type="button"
           onClick={onClear}
-          className="ml-2 flex items-center gap-1 rounded bg-neutral-800 px-2 py-0.5 text-neutral-300 hover:bg-neutral-700"
+          className="ml-2 flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-0.5 text-[11px] text-muted hover:text-danger hover:border-[#2a2a2e]"
         >
           <X size={12} />
           Clear

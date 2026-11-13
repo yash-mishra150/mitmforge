@@ -24,6 +24,8 @@ Status: ✅ done · 🔜 planned · ⏸ deferred. Ordered by phase; phases 3a �
 - ✅ Auto-save logs to Documents (JSONL), disable-able (`Documents\MitmForge\traffic-log.jsonl`, on by default)
 - ✅ Overview dashboard: requests, data transferred, errors, avg duration, status breakdown, top apps/domains, slowest requests, response-time buckets (CSS charts, no chart lib)
 
+- ✅ UI design pass (first): "Linear/Vercel dark" — theme tokens (`src/theme/theme.tsx`, CSS vars + Tailwind `@theme inline` semantic colors), Inter + JetBrains Mono, pill chips, status bar, unified tabbed Settings (AI ▸ Theme with live preview)
+
 ## Phase 3b — tools
 
 - 🔜 Compose: Postman-style client; drag a captured request → edit → replay
