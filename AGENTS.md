@@ -42,7 +42,7 @@ Single test: `cargo test --test proxy_engine` (binds 127.0.0.1:18080/18081, no n
 ## Conventions
 
 - UI layout: Proxyman-style — top bar (left: Pause/Stop/Clear icons; center: "mitmforge | Listening on..."; right: placeholder icons), filter tabs below (All/HTTP/HTTPS/WebSocket/JSON/Form/XML/JS/CSS/GraphQL/Document/Media/Other), traffic table (ID | URL | Client | Method | Status | Time | Duration | SSL | Request | Edited).
-- Icons: Lucide icons (`lucide-react`) strictly — no emoji, no inline SVGs. Icons used: Pause, StopCircle, Trash2, User, ClipboardList, Ruler, Square, Diamond, FileText. Add to AGENTS.md if introducing a new one.
+- Icons: Lucide icons (`lucide-react`) strictly — no emoji, no inline SVGs. Icons used: Pause, Play, StopCircle, Trash2, Settings, Minus, Square, X, Globe, ShieldCheck, Save, Sparkles, ScrollText, LayoutDashboard. Add to AGENTS.md if introducing a new one.
 - New features: backend command + specta types first, frontend via `call(commands.x())` from `src/platform/ipc.ts`.
 - Add tests for engine-level logic (see `tests/proxy_engine.rs` pattern: real exchange through the proxy, local upstream, no network).
 - shortcut: comments in code marked `shortcut:` document known limits — upgrade them when the limit bites.

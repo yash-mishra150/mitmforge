@@ -20,12 +20,12 @@ import {
   Minus,
   Square,
   X,
-  User,
-  ClipboardList,
-  Pencil,
-  Box,
-  Diamond,
-  FileText,
+  Globe,
+  ShieldCheck,
+  Save,
+  Sparkles,
+  ScrollText,
+  LayoutDashboard,
 } from "lucide-react";
 
 const PROXY_EVENT = "proxy://event";
@@ -43,6 +43,9 @@ export default function App() {
   const [view, setView] = useState<"log" | "overview">("log");
   const [contentTabs, setContentTabs] = useState<string[]>([]);
   const [recording, setRecording] = useState(true);
+  const [system, setSystem] = useState(false);
+  const [caTrusted, setCaTrusted] = useState(false);
+  const [autoSave, setAutoSave] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [message, setMessage] = useState("");
@@ -63,6 +66,45 @@ export default function App() {
       void unlisten.then((f: () => void) => f());
     };
   }, []);
+
+  useEffect(() => {
+    void commands
+      .proxyStatus()
+      .then((s) => {
+        setSystem(!!s.system_proxy);
+        setCaTrusted(!!s.ca_trusted);
+      })
+      .catch(() => {});
+  }, []);
+
+  const toggleSystem = () => {
+    const target = !system;
+    void commands
+      .proxySetSystem(target)
+      .then(() => {
+        setSystem(target);
+        setMessage(target ? "System proxy on" : "System proxy off");
+      })
+      .catch((e: Error) => setMessage(String(e)));
+  };
+
+  const trustCa = () => {
+    void commands
+      .proxyInstallCa()
+      .then(() => commands.proxySetSystem(true))
+      .then(() => {
+        setSystem(true);
+        setCaTrusted(true);
+        setMessage("Certificate trusted — system capture on");
+      })
+      .catch((e: Error) => setMessage(String(e)));
+  };
+
+  const toggleAutoSave = () => {
+    const target = !autoSave;
+    setAutoSave(target);
+    void commands.trafficAutosave(target).then(() => setMessage(target ? "Auto-save on" : "Auto-save off"));
+  };
 
   const toggleRecording = () => {
     const target = !recording;
@@ -188,25 +230,56 @@ export default function App() {
           })}
         </div>
 
-        {/* Right: wired tool icons */}
+        {/* Right: wired tool icons — system proxy, Trust CA, auto-save, analyze, view switches */}
         <div className="flex items-center gap-1">
-          <button type="button" className={ICON_BTN} title="Apps view" onClick={() => setView("log")}>
-            <User size={14} />
+          <button
+            type="button"
+            onClick={toggleSystem}
+            className={`${ICON_BTN} ${system ? "text-accent" : ""}`}
+            title={`System proxy ${system ? "on" : "off"}`}
+          >
+            <Globe size={14} />
           </button>
-          <button type="button" className={ICON_BTN} title="Analyze suspicious" onClick={analyze} disabled={analyzing}>
-            <ClipboardList size={14} />
+          <button
+            type="button"
+            onClick={trustCa}
+            className={`${ICON_BTN} ${caTrusted ? "text-success" : ""}`}
+            title={caTrusted ? "CA trusted" : "Trust CA (install root certificate)"}
+          >
+            <ShieldCheck size={14} />
           </button>
-          <button type="button" className={ICON_BTN} title="Overview" onClick={() => setView("overview")}>
-            <Pencil size={14} />
+          <button
+            type="button"
+            onClick={toggleAutoSave}
+            className={`${ICON_BTN} ${autoSave ? "text-success" : ""}`}
+            title={`Auto-save ${autoSave ? "on" : "off"}`}
+          >
+            <Save size={14} />
           </button>
-          <button type="button" className={ICON_BTN} title="Log view" onClick={() => setView("log")}>
-            <Box size={14} />
+          <button
+            type="button"
+            onClick={analyze}
+            disabled={analyzing}
+            className={`${ICON_BTN} ${analyzing ? "opacity-70" : ""}`}
+            title="Analyze suspicious (AI)"
+          >
+            <Sparkles size={14} />
           </button>
-          <button type="button" className={ICON_BTN} title="Placeholder">
-            <Diamond size={14} />
+          <button
+            type="button"
+            onClick={() => setView("log")}
+            className={`${ICON_BTN} ${view === "log" ? "text-accent" : ""}`}
+            title="Log view"
+          >
+            <ScrollText size={14} />
           </button>
-          <button type="button" className={ICON_BTN} title="Placeholder">
-            <FileText size={14} />
+          <button
+            type="button"
+            onClick={() => setView("overview")}
+            className={`${ICON_BTN} ${view === "overview" ? "text-accent" : ""}`}
+            title="Overview dashboard"
+          >
+            <LayoutDashboard size={14} />
           </button>
         </div>
       </div>
