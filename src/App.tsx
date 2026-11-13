@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { commands, type ProxyEvent } from "./bindings";
 import { useTraffic } from "./features/traffic/store";
@@ -16,13 +17,11 @@ import { Activity } from "lucide-react";
 const PROXY_EVENT = "proxy://event";
 const CONTENT_TABS = ["All", "JSON", "Form", "XML", "JS", "CSS", "GraphQL", "Document", "Media", "Other"] as const;
 
-const win = getCurrentWebviewWindow();
+const appWindow = getCurrentWindow();
 
-const minimize = () => void win.minimize();
-const maximize = () => {
-  void win.isMaximized().then((m) => (m ? void win.unmaximize() : void win.maximize()));
-};
-const close = () => void win.close();
+const minimize = () => void appWindow.minimize();
+const maximize = () => void appWindow.toggleMaximize();
+const close = () => void appWindow.close();
 
 export default function App() {
   const [view, setView] = useState<"log" | "overview">("log");
@@ -38,7 +37,8 @@ export default function App() {
 
   useEffect(() => {
     applyTheme(loadTheme());
-    const unlisten = getCurrentWebviewWindow().listen<ProxyEvent>(PROXY_EVENT, ({ payload }) => {
+    const unlisten = getCurrentWebviewWindow().listen<ProxyEvent>(PROXY_EVENT, (event) => {
+      const { payload } = event as unknown as { payload: ProxyEvent };
       if (payload.type === "request") {
         useTraffic.getState().addRequest(payload.entry);
       } else {
@@ -47,7 +47,7 @@ export default function App() {
     });
     void commands.proxyStart();
     return () => {
-      void unlisten.then((f) => f());
+      void unlisten.then((f: () => void) => f());
     };
   }, []);
 
@@ -110,10 +110,16 @@ export default function App() {
     setContentTabs((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [type]));
   };
 
+  const openFile = () => {
+    // Placeholder for File → Open (e.g. open a capture session / HAR)
+    setMessage("Open file — not yet wired");
+    setOptionsOpen(false);
+  };
+
   return (
     <div className="flex h-full flex-col bg-app text-fg">
-      {/* Custom title bar: drag region + window controls */}
-      <header className="titlebar flex h-10 items-center justify-between border-b border-line bg-app px-4 select-none">
+      {/* Custom title bar — drag region + window controls (OpenIDEA style) */}
+      <header className="titlebar flex h-10 items-center justify-between border-b border-line bg-app px-4 select-none" data-tauri-drag-region>
         <div className="flex items-center gap-2 cursor-default">
           <Activity size={16} className="text-accent" />
           <span className="text-xs font-medium text-fg tracking-tight">mitmforge</span>
@@ -124,6 +130,7 @@ export default function App() {
             onClick={minimize}
             className="titlebar-button w-8 h-full rounded-none hover:bg-[color-mix(in_srgb,var(--mt-text)_8%,transparent)] text-xs text-muted"
             title="Minimize"
+            data-tauri-drag-region="no-drag"
           >
             −
           </button>
@@ -132,6 +139,7 @@ export default function App() {
             onClick={maximize}
             className="titlebar-button w-8 h-full rounded-none hover:bg-[color-mix(in_srgb,var(--mt-text)_8%,transparent)] text-xs text-muted"
             title="Maximize"
+            data-tauri-drag-region="no-drag"
           >
             □
           </button>
@@ -140,23 +148,43 @@ export default function App() {
             onClick={close}
             className="titlebar-button w-8 h-full rounded-none hover:bg-red-600/20 hover:text-red-400 text-xs text-muted"
             title="Close"
+            data-tauri-drag-region="no-drag"
           >
             ✕
           </button>
         </div>
       </header>
 
-      {/* Options dropdown */}
+      {/* Options dropdown menu (File / Settings / About) */}
       {optionsOpen && (
-        <div className="fixed top-10 right-4 z-50 rounded-md border border-line bg-surface p-2 shadow-[0_4px_12px_rgb(0_0_0_/_0.4)]">
-          <button type="button" onClick={() => setSettingsOpen(true)} className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">
+        <div className="fixed top-10 right-4 z-50 rounded-md border border-line bg-surface p-1 shadow-[0_4px_12px_rgb(0_0_0_/_0.4)]">
+          <button
+            type="button"
+            onClick={openFile}
+            className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg"
+          >
+            File
+          </button>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg"
+          >
             Settings
           </button>
-          <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg">
-            Dark / Light theme
+          <button
+            type="button"
+            onClick={() => setMessage("Mitmforge v0.1.0 — MITM debugging proxy")}
+            className="w-full text-left rounded-md px-3 py-1.5 text-xs text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg"
+          >
+            About
           </button>
-          <button type="button" className="w-full text-left rounded-md px-3 py-1.5 text-xs text-danger hover:bg-[color-mix(in_srgb,var(--mt-danger)_15%,transparent)] hover:text-danger">
-            Exit MitmForge
+          <button
+            type="button"
+            onClick={close}
+            className="w-full text-left rounded-md px-3 py-1.5 text-xs text-danger hover:bg-[color-mix(in_srgb,var(--mt-danger)_15%,transparent)] hover:text-danger"
+          >
+            Exit
           </button>
         </div>
       )}
