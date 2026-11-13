@@ -17,8 +17,6 @@ import { Activity } from "lucide-react";
 const PROXY_EVENT = "proxy://event";
 const CONTENT_TABS = ["All", "JSON", "Form", "XML", "JS", "CSS", "GraphQL", "Document", "Media", "Other"] as const;
 
-const MENUBAR = ["File", "Edit", "View", "Navigate", "Code", "Refactor", "Build", "Run", "Git", "Tools", "Window", "Help"] as const;
-
 const appWindow = getCurrentWindow();
 
 const minimize = () => void appWindow.minimize();
@@ -121,12 +119,22 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col bg-app text-fg">
-      {/* Custom title bar — drag region + window controls */}
+      {/* Custom title bar — logo + menubar + window controls */}
       <header className="titlebar flex h-10 items-center justify-between border-b border-line bg-app px-4 select-none" data-tauri-drag-region>
         <div className="flex items-center gap-2 cursor-default">
           <Activity size={16} className="text-accent" />
           <span className="text-xs font-medium text-fg tracking-tight">mitmforge</span>
         </div>
+        <nav className="flex items-center gap-1 px-2 text-[11px] text-muted uppercase">
+          {["File", "Edit", "View", "Navigate", "Tools", "Help"].map((label) => (
+            <MenuBarItem
+              key={label}
+              label={label}
+              isOpen={openMenu === label}
+              onToggle={() => setOpenMenu(openMenu === label ? null : label)}
+            />
+          ))}
+        </nav>
         <div className="flex items-center gap-0">
           <button
             type="button"
@@ -157,18 +165,6 @@ export default function App() {
           </button>
         </div>
       </header>
-
-      {/* VS Code-style menubar */}
-      <nav className="flex h-8 items-center border-b border-line bg-surface px-3 text-[11px] text-muted uppercase">
-        {MENUBAR.map((label) => (
-          <MenuBarItem
-            key={label}
-            label={label}
-            isOpen={openMenu === label}
-            onToggle={() => setOpenMenu(openMenu === label ? null : label)}
-          />
-        ))}
-      </nav>
 
       {/* Pill action row */}
       <div className="flex h-8 items-center gap-1 border-b border-line bg-app px-2 overflow-x-auto scrollbar-hide">
