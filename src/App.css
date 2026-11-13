@@ -5,3 +5,12 @@ body,
 #root {
   height: 100%;
 }
+
+/* Theme tokens (see src/theme/theme.tsx). Components migrate to these
+   variables (e.g. bg-[var(--mt-bg)]) during the design pass. */
+body {
+  background: var(--mt-bg, #171717);
+  color: var(--mt-text, #e5e5e5);
+  font-family: var(--mt-font, "Cascadia Mono", "Consolas", ui-monospace, monospace);
+  font-size: var(--mt-font-size, 12px);
+}

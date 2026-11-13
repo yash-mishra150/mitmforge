@@ -6,6 +6,7 @@ import { useTraffic } from "./features/traffic/store";
 import { TrafficGrid } from "./features/traffic/TrafficGrid";
 import { Sidebar } from "./features/traffic/Sidebar";
 import { Overview } from "./features/traffic/Overview";
+import { applyTheme, loadTheme } from "./theme/theme";
 
 // Single backend → UI event channel; payload is a tagged ProxyEvent.
 const PROXY_EVENT = "proxy://event";
@@ -13,6 +14,7 @@ const PROXY_EVENT = "proxy://event";
 export default function App() {
   const [view, setView] = useState<"log" | "overview">("log");
   useEffect(() => {
+    applyTheme(loadTheme());
     const unlisten = getCurrentWebviewWindow().listen<ProxyEvent>(PROXY_EVENT, ({ payload }) => {
       if (payload.type === "request") {
         useTraffic.getState().addRequest(payload.entry);

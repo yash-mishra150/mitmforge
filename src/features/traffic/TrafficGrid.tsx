@@ -323,9 +323,9 @@ export function TrafficGrid() {
             type="button"
             onClick={() => setSettingsOpen(true)}
             className="flex items-center gap-1 rounded px-2 py-1 bg-neutral-800 text-neutral-400 hover:brightness-125"
-            title="AI settings (OpenRouter key, model, endpoint)"
+            title="AI settings, theme (fonts, colors)"
           >
-            AI Settings
+            Settings
           </button>
           <span className="text-neutral-500">{rows.length} req</span>
           <button
