@@ -8,7 +8,6 @@ import { TrafficGrid } from "./features/traffic/TrafficGrid";
 import { Sidebar } from "./features/traffic/Sidebar";
 import { Overview } from "./features/traffic/Overview";
 import { applyTheme, loadTheme } from "./theme/theme";
-import { FilterBar } from "./features/traffic/FilterBar";
 import { SettingsModal } from "./features/traffic/SettingsModal";
 import { loadAiSettings } from "./features/ai/settings";
 import { analyzeSuspicious } from "./features/ai/analyze";
@@ -166,65 +165,92 @@ export default function App() {
         </div>
       </header>
 
-      {/* Pill action row */}
-      <div className="flex h-8 items-center gap-1 border-b border-line bg-app px-2 overflow-x-auto scrollbar-hide">
-        <button
-          type="button"
-          onClick={toggleSystem}
-          title="Toggle system proxy"
-          className={`flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg ${system ? "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent" : ""}`}
-        >
-          System proxy {system ? "on" : "off"}
-        </button>
-        <button
-          type="button"
-          onClick={trustCa}
-          title="Install / trust the root CA"
-          className="flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg"
-        >
-          Trust CA
-        </button>
-        <button
-          type="button"
-          onClick={toggleRecording}
-          title="Pause / resume recording"
-          className={`flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg ${recording ? "bg-[color-mix(in_srgb,var(--mt-success)_15%,transparent)] text-success" : ""}`}
-        >
-          Recording {recording ? "on" : "off"}
-        </button>
-        <button
-          type="button"
-          onClick={toggleAutoSave}
-          title="Toggle auto-save"
-          className={`flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg ${autoSave ? "bg-[color-mix(in_srgb,var(--mt-success)_15%,transparent)] text-success" : ""}`}
-        >
-          Auto-save {autoSave ? "on" : "off"}
-        </button>
-        <button
-          type="button"
-          onClick={analyze}
-          disabled={analyzing}
-          title="Ask AI to flag suspicious requests"
-          className={`flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg ${analyzing ? "text-muted opacity-70 cursor-not-allowed" : ""}`}
-        >
-          {analyzing ? "Analyzing…" : "Analyze suspicious"}
-        </button>
-        <button
-          type="button"
-          onClick={() => setSettingsOpen(true)}
-          title="Settings (AI keys, theme)"
-          className="flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg"
-        >
-          Settings
-        </button>
-        <button
-          type="button"
-          onClick={() => setOptionsOpen(!optionsOpen)}
-          className="flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]"
-          title="Options"
-        >
-          ⋮
-        </button>
+      {/* Combined pill action row + filter tabs (Proxyman style: one middle layer) */}
+      <div className="flex h-8 items-center gap-2 border-b border-line bg-app px-2 overflow-x-auto scrollbar-hide">
+        {/* Pills */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={toggleSystem}
+            title="Toggle system proxy"
+            className={`flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg ${system ? "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent" : ""}`}
+          >
+            System proxy {system ? "on" : "off"}
+          </button>
+          <button
+            type="button"
+            onClick={trustCa}
+            title="Install / trust the root CA"
+            className="flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg"
+          >
+            Trust CA
+          </button>
+          <button
+            type="button"
+            onClick={toggleRecording}
+            title="Pause / resume recording"
+            className={`flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg ${recording ? "bg-[color-mix(in_srgb,var(--mt-success)_15%,transparent)] text-success" : ""}`}
+          >
+            Recording {recording ? "on" : "off"}
+          </button>
+          <button
+            type="button"
+            onClick={toggleAutoSave}
+            title="Toggle auto-save"
+            className={`flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg ${autoSave ? "bg-[color-mix(in_srgb,var(--mt-success)_15%,transparent)] text-success" : ""}`}
+          >
+            Auto-save {autoSave ? "on" : "off"}
+          </button>
+          <button
+            type="button"
+            onClick={analyze}
+            disabled={analyzing}
+            title="Ask AI to flag suspicious requests"
+            className={`flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg ${analyzing ? "text-muted opacity-70 cursor-not-allowed" : ""}`}
+          >
+            {analyzing ? "Analyzing…" : "Analyze suspicious"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            title="Settings (AI keys, theme)"
+            className="flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:border-[#2a2a2e] hover:text-fg"
+          >
+            Settings
+          </button>
+          <button
+            type="button"
+            onClick={() => setOptionsOpen(!optionsOpen)}
+            className="flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-xs text-muted hover:text-fg hover:border-[#2a2a2e]"
+            title="Options"
+          >
+            ⋮
+          </button>
+        </div>
+
+        {/* Spacer */}
+        <div className="h-4 w-px bg-line mx-2" />
+
+        {/* Filter tabs */}
+        <div className="flex items-center gap-1">
+          {CONTENT_TABS.map((tab) => {
+            const isActive = contentTabs.includes(tab);
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => toggleContentTab(tab)}
+                className={`whitespace-nowrap rounded-md border border-line bg-surface px-2 py-0.5 text-[11px] font-medium text-muted transition-colors hover:text-fg hover:border-[#2a2a2e] ${
+                  isActive
+                    ? "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent ring-1 ring-[color-mix(in_srgb,var(--mt-accent)_40%,transparent)]"
+                    : ""
+                }`}
+              >
+                {tab}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Options dropdown menu (File / Settings / About) */}
@@ -260,9 +286,6 @@ export default function App() {
           </button>
         </div>
       )}
-
-      {/* Filter tab row */}
-      <FilterBar activeTabs={contentTabs} allTabs={CONTENT_TABS} onContentTabToggle={toggleContentTab} />
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <Sidebar onViewChange={(v: "log" | "overview") => setView(v)} />
