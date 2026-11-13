@@ -22,7 +22,7 @@ Status: ✅ done · 🔜 planned · ⏸ deferred. Ordered by phase; phases 3a �
 - ✅ Row detail pane upgrade: headers, query, raw, bodies per tab (+ pin toggle)
 - ✅ Recording pause/resume (engine keeps correlating while paused; events withheld)
 - ✅ Auto-save logs to Documents (JSONL), disable-able (`Documents\MitmForge\traffic-log.jsonl`, on by default)
-- 🔜 Overview dashboard: requests, data transferred, errors, avg duration, status breakdown, top apps/domains, slowest requests, response-time buckets (CSS charts, no chart lib)
+- ✅ Overview dashboard: requests, data transferred, errors, avg duration, status breakdown, top apps/domains, slowest requests, response-time buckets (CSS charts, no chart lib)
 
 ## Phase 3b — tools
 

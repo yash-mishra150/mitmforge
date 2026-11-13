@@ -1,15 +1,17 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { commands, type ProxyEvent } from "./bindings";
 import { useTraffic } from "./features/traffic/store";
 import { TrafficGrid } from "./features/traffic/TrafficGrid";
 import { Sidebar } from "./features/traffic/Sidebar";
+import { Overview } from "./features/traffic/Overview";
 
 // Single backend → UI event channel; payload is a tagged ProxyEvent.
 const PROXY_EVENT = "proxy://event";
 
 export default function App() {
+  const [view, setView] = useState<"log" | "overview">("log");
   useEffect(() => {
     const unlisten = getCurrentWebviewWindow().listen<ProxyEvent>(PROXY_EVENT, ({ payload }) => {
       if (payload.type === "request") {
@@ -26,10 +28,24 @@ export default function App() {
   }, []);
 
   return (
-    <div className="flex h-full">
-      <Sidebar />
-      <div className="min-w-0 flex-1">
-        <TrafficGrid />
+    <div className="flex h-full flex-col">
+      <div className="flex items-center gap-1 border-b border-neutral-800 bg-neutral-900 px-2 py-1 text-xs">
+        {(["log", "overview"] as const).map((view) => (
+          <button
+            key={view}
+            type="button"
+            onClick={() => setView(view)}
+            className={`rounded px-2 py-1 capitalize ${view === "log" ? "bg-emerald-900/50 text-emerald-300" : "bg-neutral-800 text-neutral-400"} hover:brightness-125`}
+          >
+            {view}
+          </button>
+        ))}
+      </div>
+      <div className="flex min-h-0 flex-1">
+        <Sidebar />
+        <div className="min-w-0 flex-1">
+          {view === "log" ? <TrafficGrid /> : <Overview />}
+        </div>
       </div>
     </div>
   );
