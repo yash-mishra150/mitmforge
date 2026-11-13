@@ -1,9 +1,11 @@
 import { useTraffic } from "./store";
 import { totals, statusBreakdown, topApps, topDomains, slowest, durationBuckets } from "./stats";
+import { parseHost } from "./selectors";
 
 /** Overview stats panel for traffic. */
 export function Overview() {
   const rows = useTraffic((s) => s.rows);
+  const suspicious = useTraffic((s) => s.suspicious);
 
   if (rows.length === 0) {
     return (
@@ -13,6 +15,7 @@ export function Overview() {
     );
   }
 
+  const suspiciousEntries = Object.entries(suspicious).map(([idStr, reason]) => ({ id: Number(idStr), reason }));
   const totalsData = totals(rows);
   const statusData = statusBreakdown(rows);
   const topAppsData = topApps(rows, 5);
@@ -40,6 +43,30 @@ export function Overview() {
           <div>Bytes: {fmtBytes(totalsData.dataBytes)}</div>
           {totalsData.avgMs !== null && <div>Avg duration: {totalsData.avgMs.toFixed(1)}ms</div>}
           {totalsData.avgMs === null && <div>Avg duration: —</div>}
+        </div>
+      </section>
+
+      {/* Suspicious */}
+      <section>
+        <h3 className="text-xs font-semibold uppercase text-neutral-500 mb-2">Suspicious</h3>
+        <div className="space-y-1 text-xs">
+          {suspiciousEntries.length === 0 ? (
+            <div>Nothing flagged</div>
+          ) : (
+            <>
+              <div>{suspiciousEntries.length} flagged — check the sidebar</div>
+              {suspiciousEntries.slice(0, 5).map(({ id, reason }) => {
+                const row = rows.find((r) => r.id === id);
+                if (!row) return null;
+                const host = parseHost(row.url);
+                return (
+                  <div key={id}>
+                    ⚠ {reason} — {row.method} {host.slice(0, 40)}
+                  </div>
+                );
+              })}
+            </>
+          )}
         </div>
       </section>
 

@@ -6,6 +6,9 @@ import { useTraffic, type TrafficRow } from "./store";
 import { FilterBar } from "./FilterBar";
 import { RowDetail } from "./RowDetail";
 import { contentCategory } from "./selectors";
+import { analyzeSuspicious } from "../ai/analyze";
+import { loadAiSettings } from "../ai/settings";
+import { SettingsModal } from "./SettingsModal";
 
 const METHOD_COLORS: Record<string, string> = {
   GET: "text-emerald-400",
@@ -52,6 +55,7 @@ const RowView = memo(function RowView({
   onStartEdit,
   onCommitEdit,
   onCancelEdit,
+  suspiciousReason,
 }: {
   row: TrafficRow;
   selected: boolean;
@@ -64,6 +68,7 @@ const RowView = memo(function RowView({
   onStartEdit: (id: number) => void;
   onCommitEdit: (id: number, value: string) => void;
   onCancelEdit: () => void;
+  suspiciousReason: string | undefined;
 }) {
   const { host, path } = splitUrl(row.url);
   return (
@@ -82,6 +87,7 @@ const RowView = memo(function RowView({
     >
       <span className={row.status === null ? "text-amber-400" : "text-emerald-400"}>
         {row.status === null ? "●" : "✓"}
+        {suspiciousReason && <span className="ml-1 text-rose-400" title={suspiciousReason}>⚠</span>}
       </span>
       <span className="text-neutral-600">{row.id}</span>
       <span className={METHOD_COLORS[row.method] ?? "text-neutral-300"}>{row.method}</span>
@@ -133,6 +139,7 @@ export function TrafficGrid() {
   const clientFilter = useTraffic((s) => s.clientFilter);
   const setHostFilter = useTraffic((s) => s.setHostFilter);
   const setClientFilter = useTraffic((s) => s.setClientFilter);
+  const suspicious = useTraffic((s) => s.suspicious);
   const [status, setStatus] = useState<ProxyStatus | null>(null);
   const [message, setMessage] = useState("");
   const [recording, setRecording] = useState(true);
@@ -140,6 +147,8 @@ export function TrafficGrid() {
   const [contentFilters, setContentFilters] = useState<string[]>([]);
   const [statusFilters, setStatusFilters] = useState<number[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const parentRef = useRef<HTMLDivElement>(null);
 
   const refreshStatus = () => {
@@ -183,6 +192,19 @@ export function TrafficGrid() {
     const target = !autoSave;
     setAutoSave(target);
     void commands.trafficAutosave(target).then(() => setMessage(target ? "Auto-save on" : "Auto-save off"));
+  };
+
+  // AI batch pass over the newest 50 rows; results flag rows in the store.
+  const analyze = () => {
+    setAnalyzing(true);
+    analyzeSuspicious(rows, loadAiSettings())
+      .then((found) => {
+        useTraffic.getState().setSuspicious(found);
+        const n = Object.keys(found).length;
+        setMessage(n > 0 ? `${n} suspicious request(s) flagged` : "Nothing suspicious found");
+      })
+      .catch((e) => setMessage(String(e)))
+      .finally(() => setAnalyzing(false));
   };
 
   // View-level filter only — the ring buffer in the store is untouched.
@@ -288,6 +310,23 @@ export function TrafficGrid() {
             {autoSave ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
             {autoSave ? "Auto-save on" : "Auto-save off"}
           </button>
+          <button
+            type="button"
+            onClick={analyze}
+            disabled={analyzing || rows.length === 0}
+            title="Ask AI to flag suspicious requests"
+            className={`flex items-center gap-1 rounded px-2 py-1 ${analyzing ? "bg-neutral-800 text-neutral-500" : "bg-neutral-800 text-neutral-400"} hover:brightness-125 disabled:hover:brightness-100`}
+          >
+            {analyzing ? "Analyzing…" : "Analyze suspicious"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="flex items-center gap-1 rounded px-2 py-1 bg-neutral-800 text-neutral-400 hover:brightness-125"
+            title="AI settings (OpenRouter key, model, endpoint)"
+          >
+            AI Settings
+          </button>
           <span className="text-neutral-500">{rows.length} req</span>
           <button
             type="button"
@@ -364,12 +403,15 @@ export function TrafficGrid() {
               onStartEdit={startEdit}
               onCommitEdit={commitEdit}
               onCancelEdit={cancelEdit}
+              suspiciousReason={suspicious[filteredRows[v.index].id.toString()]}
             />
           ))}
         </div>
       </div>
 
       {selected && <RowDetail row={selected} />}
+
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

@@ -9,6 +9,7 @@ export function Sidebar() {
   const setHostFilter = useTraffic((s) => s.setHostFilter);
   const setClientFilter = useTraffic((s) => s.setClientFilter);
   const select = useTraffic((s) => s.select);
+  const suspicious = useTraffic((s) => s.suspicious);
 
   const appData = groupByApp(rows);
   const domainData = buildDomainTree(rows);
@@ -25,6 +26,26 @@ export function Sidebar() {
               {item.client}
             </Item>
           ))
+        )}
+      </Section>
+
+      <Section title="Suspicious">
+        {Object.entries(suspicious).length === 0 ? (
+          <Empty />
+        ) : (
+          Object.entries(suspicious).map(([idStr, reason]) => {
+            const id = Number(idStr);
+            const row = rows.find((r) => r.id === id);
+            if (!row) return null;
+            return (
+              <Item key={id} onClick={() => select(id)}>
+                <div className="flex flex-col">
+                  <div>{row.method} {row.url.slice(0, 40)}</div>
+                  <div className="text-xs text-neutral-500">⚠ {reason}</div>
+                </div>
+              </Item>
+            );
+          })
         )}
       </Section>
 

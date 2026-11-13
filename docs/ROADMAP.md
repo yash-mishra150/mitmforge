@@ -27,8 +27,8 @@ Status: ✅ done · 🔜 planned · ⏸ deferred. Ordered by phase; phases 3a �
 ## Phase 3b — tools
 
 - 🔜 Compose: Postman-style client; drag a captured request → edit → replay
-- 🔜 AI (BYOK): provider config for any OpenAI-compatible endpoint (OpenRouter `https://openrouter.ai/api/v1`, local runtimes like `http://localhost:1235/v1`) + per-request actions: Explain Error, Generate Mock (→ Map Local), Code Generation (curl/fetch/reqwest), prompt-driven payload scripting. MCP later.
-- 🔜 Settings page (AI keys, auto-save, listen-on)
+- 🔜 AI (BYOK): provider config for any OpenAI-compatible endpoint (OpenRouter `https://openrouter.ai/api/v1`, local runtimes like `http://localhost:1235/v1`) + per-request actions: Explain Error ✅ ("Ask AI" in row detail), Generate Mock (→ Map Local), Code Generation (curl/fetch/reqwest), prompt-driven payload scripting, suspicious-request flagging ✅ (batch over newest 50 rows; ⚠ in grid, sidebar + overview sections). MCP later.
+- 🔜 Settings page (AI keys ✅ modal with base URL/key/model in localStorage, auto-save, listen-on)
 
 ## Phase 4 — devices
 
