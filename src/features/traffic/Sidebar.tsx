@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTraffic } from "./store";
 import { groupByApp, buildDomainTree, pinnedRows } from "./selectors";
-import { FileText, Globe, Star, Pin, Archive, Monitor, Search, LayoutDashboard, User, ChevronRight, X } from "lucide-react";
+import { FileText, Globe, Star, Pin, Archive, Monitor, LayoutDashboard, User, ChevronRight, X } from "lucide-react";
 
 /** Left nav: Capture / Overview / Favorites / Pinned / Saved / All / Apps / Domains. */
 export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overview") => void }) {
@@ -29,10 +29,6 @@ export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overvi
 
   return (
     <div className="flex w-64 shrink-0 flex-col overflow-auto border-r border-line bg-surface">
-      <div className="p-3 border-b border-line/50">
-        <Search className="h-5 w-5 mx-auto text-muted/50" aria-hidden="true" />
-      </div>
-
       <Section
         title="Capture"
         icon={<Monitor className="h-3 w-3" />}

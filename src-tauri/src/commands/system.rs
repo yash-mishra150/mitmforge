@@ -32,7 +32,7 @@ pub struct SystemMetrics {
 #[specta::specta]
 pub fn system_metrics() -> SystemMetrics {
     let mut sys = System::new_with_specifics(
-        RefreshKind::nothing()
+        RefreshKind::new()
             .with_cpu(CpuRefreshKind::everything())
             .with_memory(MemoryRefreshKind::everything()),
     );
