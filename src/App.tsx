@@ -37,7 +37,7 @@ const minimize = () => void appWindow.minimize();
 const maximize = () => void appWindow.toggleMaximize();
 const close = () => void appWindow.close();
 
-const ICON_BTN = "rounded border border-line bg-surface p-1.5 text-muted hover:text-fg hover:border-[#2a2a2e]";
+const ICON_BTN = "flex h-8 w-8 items-center justify-center rounded-md border border-line bg-surface text-muted hover:text-fg hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:border-[#2a2a2e] transition-colors duration-150";
 
 export default function App() {
   const [view, setView] = useState<"log" | "overview">("log");
@@ -138,70 +138,81 @@ export default function App() {
       {/* Top bar — left: wired controls; center: status; right: settings + window controls */}
       <header className="titlebar flex h-10 items-center justify-between border-b border-line bg-app px-3 select-none" data-tauri-drag-region>
         {/* Left: wired control buttons */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={toggleRecording}
             className={`${ICON_BTN} ${recording ? "text-success" : ""}`}
             title={recording ? "Pause recording" : "Resume recording"}
+            aria-label={recording ? "Pause recording" : "Resume recording"}
           >
-            {recording ? <Pause size={15} /> : <Play size={15} />}
+            {recording ? <Pause size={14} /> : <Play size={14} />}
           </button>
           <button
             type="button"
             onClick={clearTraffic}
             className={ICON_BTN}
-            title="Stop capture / clear traffic"
+            title="Stop capture"
+            aria-label="Stop capture"
           >
-            <StopCircle size={15} />
+            <StopCircle size={14} />
           </button>
           <button
             type="button"
             onClick={clearTraffic}
             className={ICON_BTN}
             title="Clear traffic"
+            aria-label="Clear traffic"
           >
-            <Trash2 size={15} />
+            <Trash2 size={14} />
           </button>
         </div>
 
         {/* Center: app name + listening status */}
         <div className="flex items-center gap-2 cursor-default">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent" />
-          <span className="text-xs font-medium text-fg">mitmforge | Listening on 127.0.0.1:8080 | HTTP/1.1</span>
+          <span className="relative flex h-8 w-8 items-center justify-center">
+            <span className="absolute inset-0 rounded-full bg-accent/20" />
+            <span className="relative inline-block h-1.5 w-1.5 rounded-full bg-accent" />
+          </span>
+          <span className="text-xs font-medium text-fg tracking-tight">mitmforge | Listening on 127.0.0.1:8080 | HTTP/1.1</span>
         </div>
 
-        {/* Right: settings gear + window controls (OpenIDEA size) */}
-        <div className="flex items-center gap-1">
+        {/* Right: settings gear + window controls */}
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}
-            className="titlebar-button flex h-10 w-10 items-center justify-center rounded-none text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_8%,transparent)] hover:text-fg"
+            className="titlebar-button flex h-10 w-10 items-center justify-center rounded-none text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] hover:text-fg transition-colors"
             title="Settings (AI keys, theme)"
+            aria-label="Settings"
           >
             <Settings size={16} />
           </button>
+          <div className="w-px h-5 bg-line mx-1" />
           <button
             type="button"
             onClick={minimize}
-            className="titlebar-button flex h-10 w-10 items-center justify-center rounded-none text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_8%,transparent)] hover:text-fg"
+            className="titlebar-button flex h-10 w-10 items-center justify-center rounded-none text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] hover:text-fg transition-colors"
             title="Minimize"
+            aria-label="Minimize"
           >
             <Minus size={16} />
           </button>
           <button
             type="button"
             onClick={maximize}
-            className="titlebar-button flex h-10 w-10 items-center justify-center rounded-none text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_8%,transparent)] hover:text-fg"
+            className="titlebar-button flex h-10 w-10 items-center justify-center rounded-none text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] hover:text-fg transition-colors"
             title="Maximize"
+            aria-label="Maximize"
           >
             <Square size={14} />
           </button>
           <button
             type="button"
             onClick={close}
-            className="titlebar-button flex h-10 w-10 items-center justify-center rounded-none text-muted hover:bg-red-600/20 hover:text-red-400"
+            className="titlebar-button flex h-10 w-10 items-center justify-center rounded-none text-muted hover:bg-red-600/15 hover:text-red-400 transition-colors"
             title="Close"
+            aria-label="Close"
           >
             <X size={16} />
           </button>
@@ -210,7 +221,7 @@ export default function App() {
 
       {/* Below layer: filter tabs (left) + tool icons (right) */}
       <div className="flex h-9 items-center justify-between border-b border-line bg-app px-2">
-        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide">
           {CONTENT_TABS.map((tab) => {
             const isActive = contentTabs.includes(tab);
             return (
@@ -218,10 +229,10 @@ export default function App() {
                 key={tab}
                 type="button"
                 onClick={() => toggleContentTab(tab)}
-                className={`whitespace-nowrap rounded-md border border-line bg-surface px-2 py-0.5 text-[11px] font-medium text-muted transition-colors hover:text-fg hover:border-[#2a2a2e] ${
+                className={`whitespace-nowrap rounded-md border border-line bg-surface px-2.5 py-1 text-[11px] font-medium text-muted transition-all duration-150 hover:text-fg hover:border-accent/50 ${
                   isActive
-                    ? "bg-[color-mix(in_srgb,var(--mt-accent)_12%,transparent)] text-accent ring-1 ring-[color-mix(in_srgb,var(--mt-accent)_40%,transparent)]"
-                    : ""
+                    ? "bg-[color-mix(in_srgb,var(--mt-accent)_10%,transparent)] text-accent border-accent/30 shadow-[0_0_0_1px_var(--mt-accent)]"
+                    : "hover:border-accent/30 hover:bg-[color-mix(in_srgb,var(--mt-accent)_3%,transparent)]"
                 }`}
               >
                 {tab}
@@ -230,29 +241,32 @@ export default function App() {
           })}
         </div>
 
-        {/* Right: wired tool icons — system proxy, Trust CA, auto-save, analyze, view switches */}
-        <div className="flex items-center gap-1">
+        {/* Right: wired tool icons */}
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={toggleSystem}
-            className={`${ICON_BTN} ${system ? "text-success" : ""}`}
+            className={`${ICON_BTN} ${system ? "text-success border-success/30 bg-success/5" : ""}`}
             title={`System proxy ${system ? "on" : "off"}`}
+            aria-label={`System proxy ${system ? "on" : "off"}`}
           >
             <Globe size={14} />
           </button>
           <button
             type="button"
             onClick={trustCa}
-            className={`${ICON_BTN} ${caTrusted ? "text-success" : ""}`}
+            className={`${ICON_BTN} ${caTrusted ? "text-success border-success/30 bg-success/5" : ""}`}
             title={caTrusted ? "CA trusted" : "Trust CA (install root certificate)"}
+            aria-label={caTrusted ? "CA trusted" : "Trust CA"}
           >
             <ShieldCheck size={14} />
           </button>
           <button
             type="button"
             onClick={toggleAutoSave}
-            className={`${ICON_BTN} ${autoSave ? "text-success" : ""}`}
+            className={`${ICON_BTN} ${autoSave ? "text-success border-success/30 bg-success/5" : ""}`}
             title={`Auto-save ${autoSave ? "on" : "off"}`}
+            aria-label={`Auto-save ${autoSave ? "on" : "off"}`}
           >
             <Save size={14} />
           </button>
@@ -260,24 +274,28 @@ export default function App() {
             type="button"
             onClick={analyze}
             disabled={analyzing}
-            className={`${ICON_BTN} ${analyzing ? "opacity-70" : ""}`}
+            className={`${ICON_BTN} ${analyzing ? "opacity-50 cursor-not-allowed" : ""}`}
             title="Analyze suspicious (AI)"
+            aria-label="Analyze suspicious"
           >
             <Sparkles size={14} />
           </button>
+          <div className="w-px h-5 bg-line mx-1" />
           <button
             type="button"
             onClick={() => setView("log")}
-            className={`${ICON_BTN} ${view === "log" ? "text-accent" : ""}`}
+            className={`${ICON_BTN} ${view === "log" ? "text-accent border-accent/30 bg-accent/5" : ""}`}
             title="Log view"
+            aria-label="Log view"
           >
             <ScrollText size={14} />
           </button>
           <button
             type="button"
             onClick={() => setView("overview")}
-            className={`${ICON_BTN} ${view === "overview" ? "text-accent" : ""}`}
+            className={`${ICON_BTN} ${view === "overview" ? "text-accent border-accent/30 bg-accent/5" : ""}`}
             title="Overview dashboard"
+            aria-label="Overview dashboard"
           >
             <LayoutDashboard size={14} />
           </button>
@@ -293,8 +311,11 @@ export default function App() {
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {message && (
-        <div className="h-6 flex items-center px-3 text-[11px] text-muted border-t border-line bg-surface">
-          {message}
+        <div className="flex h-6 items-center px-3 text-[11px] text-muted border-t border-line bg-surface animate-slide-down">
+          <span className="flex items-center gap-2">
+            <Sparkles size={12} className="text-accent" />
+            {message}
+          </span>
         </div>
       )}
     </div>

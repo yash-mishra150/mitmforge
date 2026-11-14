@@ -3,6 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTraffic, type TrafficRow } from "./store";
 import { RowDetail } from "./RowDetail";
 import { contentCategory } from "./selectors";
+import { FileText, Shield } from "lucide-react";
 
 const GRID_COLS = "grid-cols-[2rem_1fr_5rem_4rem_3rem_4rem_4rem_2rem_2rem_2rem]";
 
@@ -48,22 +49,39 @@ const RowView = memo(function RowView({
         height: size,
         transform: `translateY(${start}px)`,
       }}
-      className={`grid cursor-pointer ${GRID_COLS} items-center gap-x-3 border-b border-line px-3 ${selected ? "bg-[color-mix(in_srgb,var(--mt-accent)_10%,transparent)] shadow-[inset_2px_0_0_var(--mt-accent)]" : "hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)]"}`}
+      className={`grid cursor-pointer ${GRID_COLS} items-center gap-x-3 border-b border-line/50 px-3 transition-colors duration-100 ${
+        selected
+          ? "bg-[color-mix(in_srgb,var(--mt-accent)_8%,transparent)] shadow-[inset_2px_0_0_var(--mt-accent)]"
+          : "hover:bg-[color-mix(in_srgb,var(--mt-text)_3%,transparent)]"
+      }`}
       data-index={index}
     >
-      <span className="text-muted">{row.id}</span>
-      <span className="truncate text-fg">{row.url}</span>
-      <span className="truncate text-muted">{row.client ?? "—"}</span>
-      <span className="inline-flex h-[18px] items-center rounded px-1.5 text-[11px] font-medium text-fg">{row.method}</span>
-      <span className={`inline-flex h-[18px] items-center rounded px-1.5 text-[11px] font-medium ${row.status === null ? "text-muted" : row.status < 300 ? "text-success" : row.status < 400 ? "text-accent" : row.status < 500 ? "text-warning" : "text-danger"}`}>
-        {row.status ?? "…"}
+      <span className="text-muted text-[11px] font-mono">{row.id}</span>
+      <span className="truncate text-fg text-sm">{row.url}</span>
+      <span className="truncate text-muted text-sm">{row.client ?? "—"}</span>
+      <span className={`inline-flex h-5 items-center rounded px-1.5 text-[10px] font-medium ${row.status === null ? "text-muted" : row.status < 300 ? "text-success" : row.status < 400 ? "text-accent" : row.status < 500 ? "text-warning" : "text-danger"}`}>
+        {row.status ?? "—"}
       </span>
-      <span className="text-muted">{time(row.started_at_ms)}</span>
-      <span className="text-muted">{row.durationMs ?? ""}</span>
-      <span className="text-muted">{row.scheme === "https" ? "SSL" : "–"}</span>
-      <span className={`text-center text-[11px] ${row.status === null ? "text-warning" : "text-success"}`}>
-        {row.status === null ? "●" : "✓"}
-        {suspiciousReason && <span className="ml-1 text-danger" title={suspiciousReason}>⚠</span>}
+      <span className="text-muted text-xs font-mono">{time(row.started_at_ms)}</span>
+      <span className="text-muted text-xs font-mono tabular-nums">{row.durationMs ?? "—"}ms</span>
+      <span className="text-muted text-xs">{row.scheme === "https" ? <Shield className="h-3 w-3 inline" /> : "—"}</span>
+      <span className={`flex items-center justify-center gap-1 text-[11px] ${row.status === null ? "text-warning" : "text-success"}`}>
+        {row.status === null ? (
+          <span className="relative flex h-4 w-4 items-center justify-center">
+            <span className="absolute inset-0 rounded-full bg-warning/20 animate-pulse" />
+            <span className="relative h-1.5 w-1.5 rounded-full bg-warning" />
+          </span>
+        ) : (
+          <span className="relative flex h-4 w-4 items-center justify-center">
+            <span className="absolute inset-0 rounded-full bg-success/20" />
+            <span className="relative h-1.5 w-1.5 rounded-full bg-success" />
+          </span>
+        )}
+        {suspiciousReason && (
+          <span className="text-danger" title={suspiciousReason}>
+            <FileText className="h-3 w-3" />
+          </span>
+        )}
       </span>
       {editing ? (
         <input
@@ -75,18 +93,18 @@ const RowView = memo(function RowView({
             if (e.key === "Enter") onCommitEdit(row.id, e.currentTarget.value);
             else if (e.key === "Escape") onCancelEdit();
           }}
-          className="w-full rounded-md border border-line bg-surface px-1 text-xs text-fg outline-none"
+          className="w-full rounded-md border border-line bg-surface px-2 py-0.5 text-xs text-fg outline-none focus:border-accent focus:ring-1 focus:ring-accent"
         />
       ) : (
         <span
-          className="truncate text-muted"
+          className="truncate text-muted text-sm max-w-[120px]"
           title={comment ? undefined : "Click to add a comment"}
           onClick={(e) => {
             e.stopPropagation();
             onStartEdit(row.id);
           }}
         >
-          {comment || "—"}
+          {comment || <span className="text-muted/40">Add comment…</span>}
         </span>
       )}
     </div>
@@ -144,8 +162,8 @@ export function TrafficGrid({ activeTabs }: TrafficGridProps) {
   const virtualizer = useVirtualizer({
     count: filteredRows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 28,
-    overscan: 20,
+    estimateSize: () => 32,
+    overscan: 10,
   });
 
   const selected = rows.find((r) => r.id === selectedId) ?? null;
@@ -156,7 +174,8 @@ export function TrafficGrid({ activeTabs }: TrafficGridProps) {
 
   return (
     <div className="flex h-full flex-col bg-app text-fg">
-      <div className={`grid ${GRID_COLS} gap-x-3 border-b border-line px-3 py-1 text-xs tracking-wide text-muted uppercase`}>
+      {/* Header */}
+      <div className={`grid ${GRID_COLS} gap-x-3 border-b border-line px-3 py-2 text-[10px] font-medium uppercase tracking-wider text-muted`}>
         <span>#</span>
         <span>URL</span>
         <span>Client</span>
@@ -166,10 +185,10 @@ export function TrafficGrid({ activeTabs }: TrafficGridProps) {
         <span>Duration</span>
         <span>SSL</span>
         <span>Request</span>
-        <span>Edited</span>
+        <span>Comment</span>
       </div>
 
-      <div ref={parentRef} className="min-h-0 flex-1 overflow-auto font-mono text-xs">
+      <div ref={parentRef} className="min-h-0 flex-1 overflow-auto font-mono text-sm">
         <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
           {virtualizer.getVirtualItems().map((v) => (
             <RowView
@@ -192,14 +211,6 @@ export function TrafficGrid({ activeTabs }: TrafficGridProps) {
       </div>
 
       {selected && <RowDetail row={selected} />}
-
-      <div className="flex h-7 shrink-0 items-center justify-between border-t border-line bg-app px-3 text-[11px] text-muted">
-        <span className="flex items-center gap-2">
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-line" />
-          proxy 127.0.0.1:8080
-        </span>
-        <span>{filteredRows.length}/{rows.length} req</span>
-      </div>
     </div>
   );
 }
