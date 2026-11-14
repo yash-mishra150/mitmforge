@@ -3,7 +3,7 @@ import { useTraffic } from "./store";
 import { totals, statusBreakdown, slowest, durationBuckets } from "./stats";
 import { parseHost } from "./selectors";
 import { commands, type SystemMetrics } from "../../bindings";
-import { FileText, AlertTriangle, Clock, Cpu, MemoryStick } from "lucide-react";
+import { FileText, Globe, AlertTriangle, Clock, Cpu, MemoryStick } from "lucide-react";
 
 /** Overview stats panel for traffic. */
 export function Overview() {
