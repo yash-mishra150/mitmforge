@@ -18,6 +18,8 @@ interface TrafficState {
   pinned: number[];
   hostFilter: string | null;
   clientFilter: string | null;
+  /** Active sidebar view mode */
+  sidebarView: "capture" | "favorites" | "pinned" | "saved" | "all" | null;
   /** row id (as string) → AI suspicion reason, populated by the "Analyze suspicious" action. */
   suspicious: Record<string, string>;
   addRequest: (entry: TrafficEntry) => void;
@@ -34,6 +36,7 @@ interface TrafficState {
   setComment: (id: number, text: string) => void;
   setHostFilter: (host: string | null) => void;
   setClientFilter: (client: string | null) => void;
+  setSidebarView: (view: "capture" | "favorites" | "pinned" | "saved" | "all" | null) => void;
   setSuspicious: (found: Record<string, string>) => void;
   clearSuspicious: () => void;
 }
@@ -95,6 +98,7 @@ export const useTraffic = create<TrafficState>((set) => ({
   pinned: [],
   hostFilter: null,
   clientFilter: null,
+  sidebarView: null,
   suspicious: {},
   addRequest: (entry) => {
     pendingRequests.push(entry);
@@ -115,7 +119,7 @@ export const useTraffic = create<TrafficState>((set) => ({
     const next = s.pinned.includes(id) ? s.pinned.filter((x) => x !== id) : [...s.pinned, id];
     return { pinned: next };
   }),
-  clear: () => set({ rows: [], selectedId: null, comments: {}, pinned: [], hostFilter: null, clientFilter: null, suspicious: {} }),
+  clear: () => set({ rows: [], selectedId: null, comments: {}, pinned: [], hostFilter: null, clientFilter: null, sidebarView: null, suspicious: {} }),
   setComment: (id, text) => set((s) => {
     const key = id.toString();
     const newComments = { ...s.comments };
@@ -128,6 +132,7 @@ export const useTraffic = create<TrafficState>((set) => ({
   }),
   setHostFilter: (host) => set({ hostFilter: host }),
   setClientFilter: (client) => set({ clientFilter: client }),
+  setSidebarView: (view) => set({ sidebarView: view }),
   setSuspicious: (found) => set({ suspicious: found }),
   clearSuspicious: () => set({ suspicious: {} }),
 }));

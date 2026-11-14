@@ -11,9 +11,12 @@ export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overvi
   const setClientFilter = useTraffic((s) => s.setClientFilter);
   const clientFilter = useTraffic((s) => s.clientFilter);
   const hostFilter = useTraffic((s) => s.hostFilter);
+  const sidebarView = useTraffic((s) => s.sidebarView);
+  const setSidebarView = useTraffic((s) => s.setSidebarView);
   const clearFilters = () => {
     setHostFilter(null);
     setClientFilter(null);
+    setSidebarView(null);
   };
 
   const appData = groupByApp(rows);
@@ -51,10 +54,34 @@ export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overvi
           onViewChange={onViewChange}
           icon={<LayoutDashboard className="h-3 w-3" />}
         />
-        <NavItem label="Favorites" count={0} icon={<Star className="h-3 w-3" />} />
-        <NavItem label="Pinned" count={pinnedData.length} icon={<Pin className="h-3 w-3" />} />
-        <NavItem label="Saved" count={0} icon={<Archive className="h-3 w-3" />} />
-        <NavItem label="All Requests" count={rows.length} icon={<Globe className="h-3 w-3" />} />
+        <NavItem
+          label="Favorites"
+          count={0}
+          icon={<Star className="h-3 w-3" />}
+          isActive={sidebarView === "favorites"}
+          onClick={() => setSidebarView("favorites")}
+        />
+        <NavItem
+          label="Pinned"
+          count={pinnedData.length}
+          icon={<Pin className="h-3 w-3" />}
+          isActive={sidebarView === "pinned"}
+          onClick={() => setSidebarView("pinned")}
+        />
+        <NavItem
+          label="Saved"
+          count={0}
+          icon={<Archive className="h-3 w-3" />}
+          isActive={sidebarView === "saved"}
+          onClick={() => setSidebarView("saved")}
+        />
+        <NavItem
+          label="All Requests"
+          count={rows.length}
+          icon={<Globe className="h-3 w-3" />}
+          isActive={sidebarView === "all"}
+          onClick={() => setSidebarView("all")}
+        />
       </Section>
 
       <Section

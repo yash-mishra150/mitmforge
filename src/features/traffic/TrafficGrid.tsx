@@ -113,9 +113,10 @@ const RowView = memo(function RowView({
 
 interface TrafficGridProps {
   activeTabs: string[];
+  sidebarView: "capture" | "favorites" | "pinned" | "saved" | "all" | null;
 }
 
-export function TrafficGrid({ activeTabs }: TrafficGridProps) {
+export function TrafficGrid({ activeTabs, sidebarView }: TrafficGridProps) {
   const rows = useTraffic((s) => s.rows);
   const selectedId = useTraffic((s) => s.selectedId);
   const select = useTraffic((s) => s.select);
@@ -123,6 +124,7 @@ export function TrafficGrid({ activeTabs }: TrafficGridProps) {
   const setComment = useTraffic((s) => s.setComment);
   const hostFilter = useTraffic((s) => s.hostFilter);
   const clientFilter = useTraffic((s) => s.clientFilter);
+  const pinned = useTraffic((s) => s.pinned);
   const suspicious = useTraffic((s) => s.suspicious);
   const [editingId, setEditingId] = useState<number | null>(null);
   const parentRef = useRef<HTMLDivElement>(null);
@@ -142,9 +144,14 @@ export function TrafficGrid({ activeTabs }: TrafficGridProps) {
           return false;
         if (hostFilter !== null && !row.url.includes(hostFilter)) return false;
         if (clientFilter !== null && row.client !== clientFilter) return false;
+        if (sidebarView === "favorites") return false; // TODO: implement favorites
+        if (sidebarView === "pinned" && !pinned.includes(row.id)) return false;
+        if (sidebarView === "saved") return false; // TODO: implement saved
+        if (sidebarView === "all") return true; // all requests
+        if (sidebarView === "capture" || sidebarView === null) return true; // default view shows all
         return true;
       }),
-    [rows, mergedContentFilters, hostFilter, clientFilter],
+    [rows, mergedContentFilters, hostFilter, clientFilter, sidebarView, pinned],
   );
 
   const startEdit = useCallback((id: number) => setEditingId(id), []);
