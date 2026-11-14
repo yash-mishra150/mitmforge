@@ -101,7 +101,7 @@ pub async fn proxy_start(
     let store = store.inner().clone();
     let (shutdown_tx, mut shutdown_rx) = tokio::sync::watch::channel(false);
     let _ = SHUTDOWN.set(shutdown_tx);
-    let handle = tauri::async_runtime::spawn(async move {
+    let engine = tauri::async_runtime::spawn(async move {
         // Readiness gate: only point the system proxy at a proxy that is
         // actually about to listen. (A previous instance holding the port
         // would otherwise route traffic into an invisible/dead process.)
@@ -119,7 +119,15 @@ pub async fn proxy_start(
             eprintln!("proxy engine stopped: {e}");
         }
     });
-    *ENGINE_TASK.lock().unwrap_or_else(|e| e.into_inner()) = Some(handle);
+    let supervisor = tauri::async_runtime::spawn(async move {
+        // Watchdog: whether the engine stops cleanly, errors, or panics,
+        // never leave the OS routed into a dead proxy. restore_on_exit only
+        // acts when the registry still points at us, and is idempotent
+        // (SAVED is taken) so the app-exit path calling it again is a no-op.
+        let _ = engine.await;
+        crate::system_proxy::restore_on_exit();
+    });
+    *ENGINE_TASK.lock().unwrap_or_else(|e| e.into_inner()) = Some(supervisor);
     Ok(())
 }
 
