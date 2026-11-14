@@ -33,7 +33,7 @@ pub fn signal_shutdown() {
 /// Stops the engine and waits (bounded) for a clean exit; called on app exit.
 pub fn shutdown_engine() {
     signal_shutdown();
-    if let Some(handle) = ENGINE_TASK.lock().unwrap().take() {
+    if let Some(handle) = ENGINE_TASK.lock().unwrap_or_else(|e| e.into_inner()).take() {
         let _ = tauri::async_runtime::block_on(async {
             tokio::time::timeout(std::time::Duration::from_secs(3), handle).await
         });
@@ -82,7 +82,7 @@ pub async fn proxy_start(
                 .append(true)
                 .open(log_dir.join("traffic-log.jsonl"))
         {
-            *AUTO_SAVE_FILE.lock().unwrap() = Some(file);
+            *AUTO_SAVE_FILE.lock().unwrap_or_else(|e| e.into_inner()) = Some(file);
         }
     }
     let sink_app = app.clone();
@@ -119,7 +119,7 @@ pub async fn proxy_start(
             eprintln!("proxy engine stopped: {e}");
         }
     });
-    *ENGINE_TASK.lock().unwrap() = Some(handle);
+    *ENGINE_TASK.lock().unwrap_or_else(|e| e.into_inner()) = Some(handle);
     Ok(())
 }
 
@@ -209,7 +209,7 @@ pub fn traffic_body(
     store: State<'_, crate::proxy::SharedStore>,
     id: u64,
 ) -> Option<crate::proxy::BodyText> {
-    store.lock().unwrap().get(id)
+    store.lock().unwrap_or_else(|e| e.into_inner()).get(id)
 }
 
 /// Master switch for engine emission and body capture (pause/resume

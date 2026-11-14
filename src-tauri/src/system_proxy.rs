@@ -29,7 +29,7 @@ mod imp {
     static CA_TRUSTED: Mutex<Option<bool>> = Mutex::new(None);
 
     pub fn ca_trusted() -> bool {
-        let mut cached = CA_TRUSTED.lock().unwrap();
+        let mut cached = CA_TRUSTED.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(trusted) = *cached {
             return trusted;
         }
@@ -43,7 +43,7 @@ mod imp {
     }
 
     pub fn mark_ca_installed() {
-        *CA_TRUSTED.lock().unwrap() = Some(true);
+        *CA_TRUSTED.lock().unwrap_or_else(|e| e.into_inner()) = Some(true);
     }
 
     fn refresh() {
@@ -73,7 +73,7 @@ mod imp {
 
     pub fn enable(server: &str) -> Result<(), String> {
         let key = open()?;
-        let mut saved = SAVED.lock().unwrap();
+        let mut saved = SAVED.lock().unwrap_or_else(|e| e.into_inner());
         if saved.is_none() {
             let prev_enable = key.get_value::<u32, _>("ProxyEnable").unwrap_or(0);
             let prev_server = key.get_value::<String, _>("ProxyServer").ok();
@@ -126,7 +126,7 @@ mod imp {
     /// Restores the pre-MitmForge settings if we enabled the proxy and it is
     /// still pointing at us. Called on app exit.
     pub fn restore_on_exit() {
-        let mut saved = SAVED.lock().unwrap();
+        let mut saved = SAVED.lock().unwrap_or_else(|e| e.into_inner());
         let Some((prev_enable, prev_server, prev_override)) = saved.take() else {
             return;
         };

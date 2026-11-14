@@ -147,7 +147,7 @@ fn capture_text(bytes: &[u8]) -> Option<String> {
 fn tee(body: Body, captured: Arc<Mutex<Vec<u8>>>) -> Body {
     let stream = body.into_data_stream().map(move |chunk| {
         if let Ok(chunk) = &chunk {
-            let mut buf = captured.lock().unwrap();
+            let mut buf = captured.lock().unwrap_or_else(|e| e.into_inner());
             if buf.len() < MAX_CAPTURED {
                 let room = MAX_CAPTURED - buf.len();
                 buf.extend_from_slice(&chunk[..chunk.len().min(room)]);
@@ -230,7 +230,9 @@ impl BodyStore {
         );
         self.order.push_back(id);
         while self.order.len() > MAX_STORED {
-            let evict = self.order.pop_front().unwrap();
+            let Some(evict) = self.order.pop_front() else {
+                break;
+            };
             self.map.remove(&evict);
         }
     }
@@ -245,11 +247,11 @@ impl BodyStore {
     pub fn get(&self, id: u64) -> Option<BodyText> {
         let captured = self.map.get(&id)?;
         let req_body = {
-            let buf = captured.req.lock().unwrap();
+            let buf = captured.req.lock().unwrap_or_else(|e| e.into_inner());
             capture_text(&buf)
         };
         let res_body = {
-            let buf = captured.res.lock().unwrap();
+            let buf = captured.res.lock().unwrap_or_else(|e| e.into_inner());
             capture_text(&buf)
         };
         Some(BodyText {
@@ -382,11 +384,10 @@ impl HttpHandler for EmitHandler {
         let req_capture: Arc<Mutex<Vec<u8>>> = Arc::default();
         if req.method().as_str() == "CONNECT" {
             if recording() {
-                self.store.lock().unwrap().insert_request(
-                    id,
-                    headers_text(req.headers()),
-                    req_capture,
-                );
+                self.store
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .insert_request(id, headers_text(req.headers()), req_capture);
                 (self.sink)(ProxyEvent::Request { entry });
                 (self.sink)(ProxyEvent::Response {
                     id,
@@ -403,11 +404,10 @@ impl HttpHandler for EmitHandler {
             started: Instant::now(),
         });
         if recording() {
-            self.store.lock().unwrap().insert_request(
-                entry.id,
-                headers_text(req.headers()),
-                req_capture.clone(),
-            );
+            self.store
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .insert_request(entry.id, headers_text(req.headers()), req_capture.clone());
             (self.sink)(ProxyEvent::Request { entry });
         }
 

@@ -65,12 +65,20 @@ mod windows_impl {
     }
 
     fn cached_pid_name(pid: u32) -> Option<String> {
-        if let Some(name) = CACHE.lock().unwrap().get(&pid).cloned() {
+        if let Some(name) = CACHE
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(&pid)
+            .cloned()
+        {
             return Some(name);
         }
         let name = pid_name(pid);
         if let Some(ref n) = name {
-            CACHE.lock().unwrap().insert(pid, n.clone());
+            CACHE
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .insert(pid, n.clone());
         }
         name
     }
@@ -112,6 +120,10 @@ mod windows_impl {
             if ret != NO_ERROR {
                 return None;
             }
+        }
+
+        if buf.len() < 4 {
+            return None;
         }
 
         let num = u32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]) as usize;
