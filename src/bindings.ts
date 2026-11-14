@@ -42,6 +42,8 @@ export const commands = {
 	trafficRecording: (enabled: boolean) => __TAURI_INVOKE<boolean>("traffic_recording", { enabled }),
 	/**  Master switch for appending traffic events to traffic-log.jsonl. */
 	trafficAutosave: (enabled: boolean) => __TAURI_INVOKE<boolean>("traffic_autosave", { enabled }),
+	/**  Returns current system metrics. */
+	systemMetrics: () => __TAURI_INVOKE<SystemMetrics>("system_metrics"),
 };
 
 /* Types */
@@ -115,6 +117,28 @@ export type ProxyStatus_Serialize = {
 	 *  otherwise enabling it only breaks every HTTPS site.
 	 */
 	ca_trusted: boolean,
+};
+
+/**  System metrics returned to the frontend. */
+export type SystemMetrics = {
+	/**  Total system memory in bytes. */
+	total_memory: number,
+	/**  Used system memory in bytes. */
+	used_memory: number,
+	/**  Total swap memory in bytes. */
+	total_swap: number,
+	/**  Used swap memory in bytes. */
+	used_swap: number,
+	/**  CPU usage percentage (0.0 - 100.0). */
+	cpu_usage: number | null,
+	/**  Per-CPU usage percentages. */
+	cpu_per_core: (number | null)[],
+	/**  Process CPU usage percentage. */
+	process_cpu_usage: number | null,
+	/**  Process memory usage in bytes. */
+	process_memory: number,
+	/**  Uptime in seconds. */
+	uptime: number,
 };
 
 /**  One intercepted exchange. `Response` events patch the row by `id`. */
