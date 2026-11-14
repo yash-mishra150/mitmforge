@@ -38,6 +38,49 @@ body {
   color: var(--mt-text, #fafafa);
   font-family: var(--mt-font, "Inter Variable", Inter, system-ui, sans-serif);
   font-size: var(--mt-font-size, 13px);
+  line-height: 1.5;
+}
+
+/* Consistent typography scale - single source of truth */
+:root {
+  --text-xs: 0.7rem;    /* 10.4px at 13px base */
+  --text-sm: 0.8125rem; /* 10.56px at 13px base */
+  --text-base: 1rem;    /* 13px */
+  --text-lg: 1.077rem;  /* 14px */
+  --text-xl: 1.154rem;  /* 15px */
+}
+
+/* Ensure all text elements use consistent sizing */
+* {
+  font-family: inherit;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: inherit;
+  line-height: 1.3;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Utility classes for consistent text sizing */
+.text-xs { font-size: var(--text-xs); }
+.text-sm { font-size: var(--text-sm); }
+.text-base { font-size: var(--text-base); }
+.text-lg { font-size: var(--text-lg); }
+.text-xl { font-size: var(--text-xl); }
+
+/* Ensure monospace elements use consistent sizing */
+code, pre, kbd, samp, .font-mono {
+  font-family: var(--mt-font-mono, "JetBrains Mono Variable", "JetBrains Mono", "Cascadia Mono", Consolas, monospace);
+  font-size: inherit;
+}
+
+pre {
+  font-size: 0.85em;
+  line-height: 1.45;
 }
 
 /* Modern scrollbars: thin, quiet, accent on hover. */
