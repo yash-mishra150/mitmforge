@@ -56,6 +56,7 @@ pub fn run() {
         .manage(proxy::BodyStore::shared())
         .invoke_handler(typed_invoke)
         .setup(move |app| {
+            crate::system_proxy::startup_heal();
             builder.mount_events(app);
             Ok(())
         })

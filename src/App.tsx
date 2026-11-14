@@ -142,6 +142,11 @@ export default function App() {
     setMessage("Traffic cleared");
   };
 
+  const stopCapture = () => {
+    setRecording(false);
+    void commands.trafficRecording(false).then(() => setMessage("Capture stopped"));
+  };
+
   const analyze = () => {
     setAnalyzing(true);
     analyzeSuspicious(useTraffic.getState().rows, aiSettings)
@@ -183,7 +188,7 @@ export default function App() {
             </button>
             <button
               type="button"
-              onClick={clearTraffic}
+              onClick={stopCapture}
               className={ICON_BTN}
               title="Stop capture"
               aria-label="Stop capture"

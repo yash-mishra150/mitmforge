@@ -146,6 +146,22 @@ mod imp {
         drop(saved);
         refresh();
     }
+
+    /// Un-breaks browsing after a crash/force-kill: if the registry still
+    /// routes through our port but this fresh process has not started its
+    /// engine yet, switch the system proxy off. Called once at app launch,
+    /// before the engine can start, so it can never fight a live engine.
+    pub fn startup_heal() {
+        let Ok(key) = open() else { return };
+        let enabled = key.get_value::<u32, _>("ProxyEnable").unwrap_or(0) != 0;
+        let ours =
+            key.get_value::<String, _>("ProxyServer").ok().as_deref() == Some("127.0.0.1:8080");
+        if enabled && ours {
+            let _ = key.set_value("ProxyEnable", &0u32);
+            drop(key);
+            refresh();
+        }
+    }
 }
 
 #[cfg(not(windows))]
@@ -164,6 +180,7 @@ mod imp {
         Err("system proxy control is Windows-only for now".into())
     }
     pub fn restore_on_exit() {}
+    pub fn startup_heal() {}
 }
 
 pub use imp::*;

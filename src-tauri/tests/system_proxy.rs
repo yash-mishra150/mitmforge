@@ -19,3 +19,19 @@ fn enable_disable_roundtrip() {
         system_proxy::enable("127.0.0.1:8080").expect("restore");
     }
 }
+
+#[test]
+fn startup_heal_clears_stale_proxy() {
+    let before = system_proxy::current();
+
+    system_proxy::enable("127.0.0.1:8080").expect("enable");
+    assert_eq!(system_proxy::current(), Some(true), "stale proxy present");
+
+    system_proxy::startup_heal();
+    assert_eq!(system_proxy::current(), Some(false), "healed");
+
+    // Restore whatever the machine had before the test.
+    if before == Some(true) {
+        system_proxy::enable("127.0.0.1:8080").expect("restore");
+    }
+}
