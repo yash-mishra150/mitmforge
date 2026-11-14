@@ -259,7 +259,7 @@ export default function App() {
 
       {/* Below layer: filter tabs (left) + tool icons (right) */}
       <div className="flex h-9 items-center justify-between border-b border-line bg-app px-2">
-        <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide">
+        <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto scrollbar-hide">
           {CONTENT_TABS.map((tab) => {
             const isActive = contentTabs.includes(tab);
             return (
@@ -280,7 +280,7 @@ export default function App() {
         </div>
 
         {/* Right: wired tool icons */}
-        <div className="flex items-center gap-0.5">
+        <div className="flex shrink-0 items-center gap-0.5">
           <button
             type="button"
             onClick={toggleSystem}
@@ -318,7 +318,6 @@ export default function App() {
           >
             <Sparkles size={14} />
           </button>
-          <div className="w-px h-5 bg-line mx-1" />
         </div>
       </div>
 
