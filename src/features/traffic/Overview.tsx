@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useTraffic } from "./store";
-import { totals, statusBreakdown, topApps, topDomains, slowest, durationBuckets } from "./stats";
+import { totals, statusBreakdown, slowest, durationBuckets } from "./stats";
 import { parseHost } from "./selectors";
 import { commands, type SystemMetrics } from "../../bindings";
-import { FileText, Globe, AlertTriangle, Clock, Server, Cpu, MemoryStick } from "lucide-react";
+import { FileText, AlertTriangle, Clock, Cpu, MemoryStick } from "lucide-react";
 
 /** Overview stats panel for traffic. */
 export function Overview() {
@@ -51,8 +51,6 @@ export function Overview() {
   const suspiciousEntries = Object.entries(suspicious).map(([idStr, reason]) => ({ id: Number(idStr), reason }));
   const totalsData = totals(rows);
   const statusData = statusBreakdown(rows);
-  const topAppsData = topApps(rows, 5);
-  const topDomainsData = topDomains(rows, 5);
   const slowestData = slowest(rows, 5);
   const durationData = durationBuckets(rows);
   const maxDurationCount = Math.max(...durationData.map((b) => b.count), 1);
@@ -142,43 +140,8 @@ export function Overview() {
         </Card>
       </div>
 
-      {/* Top Items Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Top Apps */}
-        <Card title="Top Apps" icon={<Server className="h-4 w-4" />}>
-          <div className="space-y-2">
-            {topAppsData.length === 0 ? (
-              <div className="text-center py-4 text-muted text-sm">No app data</div>
-            ) : (
-              topAppsData.map(({ client, count }) => (
-                <div key={client} className="flex items-center justify-between py-1.5 hover:bg-[color-mix(in_srgb,var(--mt-text)_3%,transparent)] rounded px-2 transition-colors">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="h-2 w-2 rounded-full bg-accent/50" />
-                    <span className="truncate text-sm text-fg">{client}</span>
-                  </div>
-                  <span className="text-xs font-medium text-muted">{count}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </Card>
-
-        {/* Top Domains */}
-        <Card title="Top Domains" icon={<Globe className="h-4 w-4" />}>
-          <div className="space-y-2">
-            {topDomainsData.length === 0 ? (
-              <div className="text-center py-4 text-muted text-sm">No domain data</div>
-            ) : (
-              topDomainsData.map(({ host, count }) => (
-                <div key={host} className="flex items-center justify-between py-1.5 hover:bg-[color-mix(in_srgb,var(--mt-text)_3%,transparent)] rounded px-2 transition-colors">
-                  <span className="truncate text-sm text-fg max-w-[70%]">{host}</span>
-                  <span className="text-xs font-medium text-muted">{count}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </Card>
-      </div>
+      {/* System Resources — live CPU/Memory (polls every 2s) */}
+      <SystemResourcesCard metrics={metrics} />
 
       {/* Slowest Requests */}
       <Card title="Slowest Requests" icon={<Clock className="h-4 w-4" />}>
@@ -206,9 +169,6 @@ export function Overview() {
           </>
         )}
       </Card>
-
-      {/* System Resources — live CPU/Memory (polls every 2s) */}
-      <SystemResourcesCard metrics={metrics} />
 
       {/* Suspicious */}
       <Card title="Suspicious Activity" icon={<AlertTriangle className="h-4 w-4" />}>
