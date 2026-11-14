@@ -1,6 +1,7 @@
 //! IPC surface: thin typed adapters; no domain logic here.
 
 pub mod proxy;
+pub mod system;
 
 use crate::proxy::ProxyEvent;
 use tauri_specta::collect_commands;
@@ -17,6 +18,7 @@ pub fn builder() -> tauri_specta::Builder<tauri::Wry> {
             proxy::traffic_body,
             proxy::traffic_recording,
             proxy::traffic_autosave,
+            system::system_metrics,
         ])
         .typ::<ProxyEvent>()
         .dangerously_cast_bigints_to_number()
