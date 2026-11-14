@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Save,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 
 const PROXY_EVENT = "proxy://event";
@@ -41,6 +42,7 @@ export default function App() {
   const [view, setView] = useState<"log" | "overview">("log");
   const [contentTabs, setContentTabs] = useState<string[]>([]);
   const [recording, setRecording] = useState(true);
+  const [proxyStarting, setProxyStarting] = useState(false);
   const [system, setSystem] = useState(false);
   const [caTrusted, setCaTrusted] = useState(false);
   const [autoSave, setAutoSave] = useState(true);
@@ -60,7 +62,7 @@ export default function App() {
         useTraffic.getState().addResponse(payload.id, payload.status, payload.durationMs ?? null);
       }
     });
-    void commands.proxyStart();
+    // Don't auto-start proxy on app launch - wait for user to click "Start Capture" (recording toggle)
     return () => {
       void unlisten.then((f: () => void) => f());
     };
@@ -107,7 +109,23 @@ export default function App() {
 
   const toggleRecording = () => {
     const target = !recording;
+    if (target) {
+      setProxyStarting(true);
+    }
     setRecording(target);
+    if (target) {
+      void commands
+        .proxyStart()
+        .then(() => {
+          setProxyStarting(false);
+        })
+        .catch((e: Error) => {
+          if (!String(e).includes("AlreadyRunning")) {
+            setMessage(String(e));
+          }
+          setProxyStarting(false);
+        });
+    }
     void commands.trafficRecording(target).then(() => setMessage(target ? "Recording on" : "Recording paused"));
   };
 
@@ -142,11 +160,18 @@ export default function App() {
             <button
               type="button"
               onClick={toggleRecording}
-              className={`${ICON_BTN} ${recording ? "text-success" : ""}`}
-              title={recording ? "Pause recording" : "Resume recording"}
-              aria-label={recording ? "Pause recording" : "Resume recording"}
+              disabled={proxyStarting}
+              className={`${ICON_BTN} ${recording ? "text-success" : ""} ${proxyStarting ? "opacity-70 cursor-wait" : ""}`}
+              title={recording ? "Pause recording" : proxyStarting ? "Starting proxy…" : "Resume recording"}
+              aria-label={recording ? "Pause recording" : proxyStarting ? "Starting proxy…" : "Resume recording"}
             >
-              {recording ? <Pause size={14} /> : <Play size={14} />}
+              {proxyStarting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : recording ? (
+                <Pause size={14} />
+              ) : (
+                <Play size={14} />
+              )}
             </button>
             <button
               type="button"
