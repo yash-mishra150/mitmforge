@@ -55,3 +55,64 @@ body {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Animations */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-slide-down {
+  animation: slide-down 200ms ease-out forwards;
+}
+.animate-fade-in {
+  animation: fade-in 150ms ease-out forwards;
+}
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--mt-accent);
+  outline-offset: 2px;
+}
+
+/* Smooth transitions for interactive elements */
+button, [role="button"] {
+  transition: all 150ms ease;
+}
+
+/* Custom selection */
+::selection {
+  background: var(--mt-accent);
+  color: var(--mt-bg);
+}
+
+/* Smooth sidebar transition */
+.sidebar-transition {
+  transition: width 200ms ease, opacity 150ms ease;
+}
+
+/* Hover lift effect for cards */
+.hover-lift {
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.hover-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.3);
+}
