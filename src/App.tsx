@@ -54,6 +54,9 @@ export default function App() {
 
   useEffect(() => {
     applyTheme(loadTheme());
+    // Right-click menu (incl. Inspect) off everywhere in the app.
+    const noContextMenu = (e: MouseEvent) => e.preventDefault();
+    document.addEventListener("contextmenu", noContextMenu);
     const unlisten = getCurrentWebviewWindow().listen<ProxyEvent>(PROXY_EVENT, (event) => {
       const { payload } = event as unknown as { payload: ProxyEvent };
       if (payload.type === "request") {
@@ -72,6 +75,7 @@ export default function App() {
       })
       .finally(() => setProxyStarting(false));
     return () => {
+      document.removeEventListener("contextmenu", noContextMenu);
       void unlisten.then((f: () => void) => f());
     };
   }, []);
