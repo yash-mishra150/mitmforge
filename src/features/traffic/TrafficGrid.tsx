@@ -137,18 +137,22 @@ export function TrafficGrid({ activeTabs, sidebarView }: TrafficGridProps) {
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
+        // Content type filter
         if (
           mergedContentFilters.length > 0 &&
           !mergedContentFilters.includes(contentCategory(row.resContentType, row.req_content_type))
         )
           return false;
+        // Host filter
         if (hostFilter !== null && !row.url.includes(hostFilter)) return false;
+        // Client/app filter
         if (clientFilter !== null && row.client !== clientFilter) return false;
-        if (sidebarView === "favorites") return false; // TODO: implement favorites
-        if (sidebarView === "pinned" && !pinned.includes(row.id)) return false;
-        if (sidebarView === "saved") return false; // TODO: implement saved
-        if (sidebarView === "all") return true; // all requests
-        if (sidebarView === "capture" || sidebarView === null) return true; // default view shows all
+        // Sidebar view filter
+        const view = sidebarView ?? "capture";
+        if (view === "favorites") return false; // TODO: implement favorites
+        if (view === "pinned" && !pinned.includes(row.id)) return false;
+        if (view === "saved") return false; // TODO: implement saved
+        // "all", "capture", null, undefined -> show all
         return true;
       }),
     [rows, mergedContentFilters, hostFilter, clientFilter, sidebarView, pinned],

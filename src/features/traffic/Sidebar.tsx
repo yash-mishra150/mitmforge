@@ -16,7 +16,7 @@ export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overvi
   const clearFilters = () => {
     setHostFilter(null);
     setClientFilter(null);
-    setSidebarView(null);
+    setSidebarView("capture");
   };
 
   const appData = groupByApp(rows);
@@ -45,7 +45,7 @@ export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overvi
           view="log"
           onViewChange={onViewChange}
           icon={<FileText className="h-3 w-3" />}
-          isActive={(!clientFilter && !hostFilter) && (sidebarView === "capture" || sidebarView === null)}
+          isActive={sidebarView === "capture"}
           onClick={clearFilters}
         />
         <NavItem
