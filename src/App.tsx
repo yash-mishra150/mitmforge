@@ -7,6 +7,7 @@ import { TrafficGrid } from "./features/traffic/TrafficGrid";
 import { Sidebar } from "./features/traffic/Sidebar";
 import { Overview } from "./features/traffic/Overview";
 import { SettingsModal } from "./features/traffic/SettingsModal";
+import { Splash } from "./features/traffic/Splash";
 import { applyTheme, loadTheme } from "./theme/theme";
 import { useTraffic } from "./features/traffic/store";
 import { loadAiSettings } from "./features/ai/settings";
@@ -49,6 +50,10 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [message, setMessage] = useState("");
+  const [splash, setSplash] = useState(true);
+  // One-shot "first boot" engine gate — proxyStarting is reused by the
+  // record button, which would flash the splash on every resume.
+  const [booting, setBooting] = useState(true);
   const sidebarView = useTraffic((s) => s.sidebarView);
   const aiSettings = loadAiSettings();
 
@@ -73,11 +78,20 @@ export default function App() {
       .catch((e: Error) => {
         if (!String(e).includes("AlreadyRunning")) setMessage(String(e));
       })
-      .finally(() => setProxyStarting(false));
+      .finally(() => {
+        setProxyStarting(false);
+        setBooting(false);
+      });
     return () => {
       document.removeEventListener("contextmenu", noContextMenu);
       void unlisten.then((f: () => void) => f());
     };
+  }, []);
+
+  // Splash never shows for less than 1.5s (proxyStarting may clear sooner).
+  useEffect(() => {
+    const t = setTimeout(() => setSplash(false), 1500);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
@@ -271,7 +285,7 @@ export default function App() {
                 key={tab}
                 type="button"
                 onClick={() => toggleContentTab(tab)}
-                className={`whitespace-nowrap rounded-md border border-line bg-surface px-2.5 py-1 text-[11px] font-medium text-muted transition-all duration-150 hover:text-fg hover:border-accent/50 ${
+                className={`whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-medium text-muted transition-all duration-150 hover:text-fg hover:border-accent/50 ${
                   isActive
                     ? "bg-[color-mix(in_srgb,var(--mt-accent)_10%,transparent)] text-accent border-accent/30 shadow-[0_0_0_1px_var(--mt-accent)]"
                     : "hover:border-accent/30 hover:bg-[color-mix(in_srgb,var(--mt-accent)_3%,transparent)]"
@@ -341,6 +355,7 @@ export default function App() {
           </span>
         </div>
       )}
+      <Splash show={splash || booting} />
     </div>
   );
 }

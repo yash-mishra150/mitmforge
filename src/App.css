@@ -118,6 +118,10 @@ pre {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
 }
+@keyframes splash-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(220%); }
+}
 
 .animate-slide-down {
   animation: slide-down 200ms ease-out forwards;
