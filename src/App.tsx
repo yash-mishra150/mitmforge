@@ -135,45 +135,46 @@ export default function App() {
   return (
     <div className="flex h-full flex-col bg-app text-fg">
       {/* Top bar — left: wired controls; center: status; right: settings + window controls */}
-      <header className="titlebar flex h-10 items-center justify-between border-b border-line bg-app px-3 select-none" data-tauri-drag-region>
-        {/* Left: wired control buttons */}
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            onClick={toggleRecording}
-            className={`${ICON_BTN} ${recording ? "text-success" : ""}`}
-            title={recording ? "Pause recording" : "Resume recording"}
-            aria-label={recording ? "Pause recording" : "Resume recording"}
-          >
-            {recording ? <Pause size={14} /> : <Play size={14} />}
-          </button>
-          <button
-            type="button"
-            onClick={clearTraffic}
-            className={ICON_BTN}
-            title="Stop capture"
-            aria-label="Stop capture"
-          >
-            <StopCircle size={14} />
-          </button>
-          <button
-            type="button"
-            onClick={clearTraffic}
-            className={ICON_BTN}
-            title="Clear traffic"
-            aria-label="Clear traffic"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
+      <header className="titlebar flex h-10 items-center border-b border-line bg-app px-3 select-none" data-tauri-drag-region>
+        {/* Left: wired control buttons + app name + status */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={toggleRecording}
+              className={`${ICON_BTN} ${recording ? "text-success" : ""}`}
+              title={recording ? "Pause recording" : "Resume recording"}
+              aria-label={recording ? "Pause recording" : "Resume recording"}
+            >
+              {recording ? <Pause size={14} /> : <Play size={14} />}
+            </button>
+            <button
+              type="button"
+              onClick={clearTraffic}
+              className={ICON_BTN}
+              title="Stop capture"
+              aria-label="Stop capture"
+            >
+              <StopCircle size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={clearTraffic}
+              className={ICON_BTN}
+              title="Clear traffic"
+              aria-label="Clear traffic"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
 
-        {/* Center: app name + listening status */}
-        <div className="flex items-center gap-2 cursor-default">
-          <span className="relative flex h-8 w-8 items-center justify-center">
-            <span className="absolute inset-0 rounded-full bg-accent/20" />
-            <span className="relative inline-block h-1.5 w-1.5 rounded-full bg-accent" />
-          </span>
-          <span className="text-xs font-medium text-fg tracking-tight">mitmforge | Listening on 127.0.0.1:8080 | HTTP/1.1</span>
+          <div className="flex items-center gap-2 cursor-default">
+            <span className="relative flex h-8 w-8 items-center justify-center">
+              <span className="absolute inset-0 rounded-full bg-accent/20" />
+              <span className="relative inline-block h-1.5 w-1.5 rounded-full bg-accent" />
+            </span>
+            <span className="text-xs font-medium text-fg tracking-tight truncate">mitmforge | Listening on 127.0.0.1:8080 | HTTP/1.1</span>
+          </div>
         </div>
 
         {/* Right: settings gear + window controls */}
