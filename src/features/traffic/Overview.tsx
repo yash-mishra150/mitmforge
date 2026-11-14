@@ -1,23 +1,49 @@
+import { useEffect, useState } from "react";
 import { useTraffic } from "./store";
 import { totals, statusBreakdown, topApps, topDomains, slowest, durationBuckets } from "./stats";
 import { parseHost } from "./selectors";
-import { FileText, Globe, AlertTriangle, Clock, Server } from "lucide-react";
+import { commands, type SystemMetrics } from "../../bindings";
+import { FileText, Globe, AlertTriangle, Clock, Server, Cpu, MemoryStick } from "lucide-react";
 
 /** Overview stats panel for traffic. */
 export function Overview() {
   const rows = useTraffic((s) => s.rows);
   const suspicious = useTraffic((s) => s.suspicious);
+  const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
+
+  // Poll system metrics every 2s while the overview is open.
+  useEffect(() => {
+    let alive = true;
+    const poll = () => {
+      void commands
+        .systemMetrics()
+        .then((m) => {
+          if (alive) setMetrics(m);
+        })
+        .catch(() => {});
+    };
+    poll();
+    const timer = setInterval(poll, 2000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, []);
 
   if (rows.length === 0) {
+    // Even with no traffic, system resources stay visible.
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--mt-accent)_8%,transparent)]">
-          <FileText className="h-8 w-8 text-accent/60" />
+      <div className="flex h-full flex-col gap-4 overflow-auto p-4">
+        <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-line bg-surface py-10">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[color-mix(in_srgb,var(--mt-accent)_8%,transparent)]">
+            <FileText className="h-8 w-8 text-accent/60" />
+          </div>
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-fg">No traffic captured yet</h3>
+            <p className="text-sm text-muted mt-1">Start the proxy and browse to see analytics</p>
+          </div>
         </div>
-        <div className="text-center">
-          <h3 className="text-lg font-medium text-fg">No traffic captured yet</h3>
-          <p className="text-sm text-muted mt-1">Start the proxy and browse to see analytics</p>
-        </div>
+        <SystemResourcesCard metrics={metrics} />
       </div>
     );
   }
@@ -181,6 +207,9 @@ export function Overview() {
         )}
       </Card>
 
+      {/* System Resources — live CPU/Memory (polls every 2s) */}
+      <SystemResourcesCard metrics={metrics} />
+
       {/* Suspicious */}
       <Card title="Suspicious Activity" icon={<AlertTriangle className="h-4 w-4" />}>
         <div className="space-y-2">
@@ -226,6 +255,90 @@ function Card({ title, icon, children }: { title: string; icon?: React.ReactNode
       </div>
       <div className="flex-1">{children}</div>
     </div>
+  );
+}
+
+/** Byte count formatted as B/KB/MB/GB (shared, module-level). */
+function fmtBytes(n: number): string {
+  if (n < 1024) return n + "B";
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + "KB";
+  if (n < 1024 * 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + "MB";
+  return (n / (1024 * 1024 * 1024)).toFixed(1) + "GB";
+}
+
+/** Live CPU/Memory card; polls handled by the parent (2s interval). */
+function SystemResourcesCard({ metrics }: { metrics: SystemMetrics | null }) {
+  // Backend can report null CPU readings mid-refresh; treat as 0 for display.
+  const cpuUsage = metrics?.cpu_usage ?? 0;
+  const cpuCores = metrics?.cpu_per_core?.map((u) => u ?? 0) ?? [];
+  const memPct = metrics && metrics.total_memory > 0 ? (metrics.used_memory / metrics.total_memory) * 100 : 0;
+  const cpuColor = cpuUsage > 80 ? "text-danger" : cpuUsage > 50 ? "text-warning" : "text-success";
+  const cpuBar = cpuUsage > 80 ? "bg-danger" : cpuUsage > 50 ? "bg-warning" : "bg-success";
+
+  return (
+    <Card title="System Resources" icon={<Cpu className="h-4 w-4" />}>
+      {!metrics ? (
+        <div className="text-center py-4 text-muted text-sm">Loading metrics…</div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* CPU */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted">
+                <Cpu className="h-3.5 w-3.5" /> CPU
+              </span>
+              <span className={`text-2xl font-bold ${cpuColor}`}>{cpuUsage.toFixed(1)}%</span>
+            </div>
+            <div className="h-2 bg-app rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${cpuBar}`}
+                style={{ width: `${Math.min(cpuUsage, 100)}%` }}
+              />
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {cpuCores.map((usage, i) => (
+                <div key={i} className="space-y-0.5">
+                  <div className="h-1 bg-app rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${usage > 80 ? "bg-danger" : usage > 50 ? "bg-warning" : "bg-success"}`}
+                      style={{ width: `${Math.min(usage, 100)}%` }}
+                    />
+                  </div>
+                  <span className="block text-center text-[9px] text-muted/60">{i}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Memory */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted">
+                <MemoryStick className="h-3.5 w-3.5" /> Memory
+              </span>
+              <span className="text-2xl font-bold text-fg">{memPct.toFixed(1)}%</span>
+            </div>
+            <div className="h-2 bg-app rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full bg-accent transition-all duration-500"
+                style={{ width: `${memPct}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-xs text-muted">
+              <span>{fmtBytes(metrics.used_memory)} used</span>
+              <span>{fmtBytes(metrics.total_memory)} total</span>
+            </div>
+            {/* MitmForge process */}
+            <div className="flex items-center justify-between pt-2 border-t border-line/50">
+              <span className="text-xs text-muted">mitmforge process</span>
+              <span className="text-xs font-medium text-fg">
+                {fmtBytes(metrics.process_memory)} · {(metrics.process_cpu_usage ?? 0).toFixed(1)}% CPU
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
 
