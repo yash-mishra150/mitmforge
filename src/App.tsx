@@ -47,6 +47,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [message, setMessage] = useState("");
+  const sidebarView = useTraffic((s) => s.sidebarView);
   const aiSettings = loadAiSettings();
 
   useEffect(() => {
@@ -285,7 +286,7 @@ export default function App() {
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <Sidebar onViewChange={(v: "log" | "overview") => setView(v)} />
         <div className="min-w-0 flex-1">
-          {view === "log" ? <TrafficGrid activeTabs={contentTabs} /> : <Overview />}
+          {view === "log" ? <TrafficGrid activeTabs={contentTabs} sidebarView={sidebarView} /> : <Overview />}
         </div>
       </div>
 
