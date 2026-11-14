@@ -62,7 +62,15 @@ export default function App() {
         useTraffic.getState().addResponse(payload.id, payload.status, payload.durationMs ?? null);
       }
     });
-    // Don't auto-start proxy on app launch - wait for user to click "Start Capture" (recording toggle)
+    // Proxy auto-starts: recording defaults on, and starting after the listener
+    // attaches means early traffic is not lost. AlreadyRunning is harmless.
+    setProxyStarting(true);
+    void unlisten
+      .then(() => commands.proxyStart())
+      .catch((e: Error) => {
+        if (!String(e).includes("AlreadyRunning")) setMessage(String(e));
+      })
+      .finally(() => setProxyStarting(false));
     return () => {
       void unlisten.then((f: () => void) => f());
     };
