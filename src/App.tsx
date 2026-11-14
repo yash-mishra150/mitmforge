@@ -24,8 +24,6 @@ import {
   ShieldCheck,
   Save,
   Sparkles,
-  ScrollText,
-  LayoutDashboard,
 } from "lucide-react";
 
 const PROXY_EVENT = "proxy://event";
@@ -281,24 +279,6 @@ export default function App() {
             <Sparkles size={14} />
           </button>
           <div className="w-px h-5 bg-line mx-1" />
-          <button
-            type="button"
-            onClick={() => setView("log")}
-            className={`${ICON_BTN} ${view === "log" ? "text-accent border-accent/30 bg-accent/5" : ""}`}
-            title="Log view"
-            aria-label="Log view"
-          >
-            <ScrollText size={14} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("overview")}
-            className={`${ICON_BTN} ${view === "overview" ? "text-accent border-accent/30 bg-accent/5" : ""}`}
-            title="Overview dashboard"
-            aria-label="Overview dashboard"
-          >
-            <LayoutDashboard size={14} />
-          </button>
         </div>
       </div>
 
