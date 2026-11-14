@@ -45,7 +45,7 @@ export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overvi
           view="log"
           onViewChange={onViewChange}
           icon={<FileText className="h-3 w-3" />}
-          isActive={!clientFilter && !hostFilter}
+          isActive={(!clientFilter && !hostFilter) && (sidebarView === "capture" || sidebarView === null)}
           onClick={clearFilters}
         />
         <NavItem
