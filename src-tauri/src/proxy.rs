@@ -79,7 +79,7 @@ pub type Sink = Arc<dyn Fn(ProxyEvent) + Send + Sync>;
 
 static NEXT_ID: AtomicU64 = AtomicU64::new(1);
 /// Decrypt HTTPS only when the CA is trusted; otherwise blind-tunnel
-/// (Proxyman's default): real certificates reach the client, nothing
+/// (the common default): real certificates reach the client, nothing
 /// breaks, and CONNECT rows still log domains.
 static INTERCEPT_TLS: AtomicBool = AtomicBool::new(false);
 
@@ -378,7 +378,7 @@ impl HttpHandler for EmitHandler {
         let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
         // Resolve before emitting so the Request row carries attribution.
         let entry = build_entry(id, &req, _ctx.client_addr, self.proxy_addr);
-        // CONNECT tunnel: logged like Proxyman (with headers); we intercept,
+        // CONNECT tunnel: logged with headers (classic debugger behavior); we intercept,
         // so it answers 200 and the decrypted requests follow as their own
         // rows. Kept out of the pending queue so correlation stays correct.
         let req_capture: Arc<Mutex<Vec<u8>>> = Arc::default();
@@ -506,7 +506,7 @@ impl HttpHandler for EmitHandler {
 /// Loads the persisted CA (`ca.cer` + `ca.key`) from `dir`, or creates and
 /// saves it there. `None` = ephemeral in-memory CA (tests).
 /// shortcut: the CA private key is stored unencrypted on disk (like
-/// Proxyman/Charles); acceptable for a local debugging tool.
+/// other local debugging tools); acceptable for a local debugging tool.
 fn load_or_create_ca(dir: Option<&Path>) -> Result<Issuer<'static, KeyPair>, String> {
     let (cer_path, key_path) = match dir {
         Some(dir) => (dir.join("ca.cer"), dir.join("ca.key")),

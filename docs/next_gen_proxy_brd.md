@@ -7,7 +7,7 @@
 
 ## 1. Executive Summary
 ### 1.1 The Problem
-Developers, QA engineers, and security researchers rely heavily on HTTP debugging proxies to intercept and modify network traffic. Currently, the market is monopolized by proprietary SaaS tools (Proxyman, Requestly) that lock essential features (Breakpoints, Local Mapping) behind expensive paywalls ($89+ licenses or $20/mo subscriptions). Existing open-source alternatives are either CLI-only (mitmproxy), plagued by Java memory bloat (Charles/ZAP), or hindered by Electron's JavaScript serialization bottlenecks (HTTP Toolkit).
+Developers, QA engineers, and security researchers rely heavily on HTTP debugging proxies to intercept and modify network traffic. Currently, the market is monopolized by proprietary SaaS tools that lock essential features (Breakpoints, Local Mapping) behind expensive paywalls ($89+ licenses or $20/mo subscriptions). Existing open-source alternatives are either CLI-only (mitmproxy), plagued by Java memory bloat (ZAP), or hindered by Electron's JavaScript serialization bottlenecks (HTTP Toolkit).
 
 ### 1.2 The Solution
 A blazing-fast, cross-platform, native desktop application built with **Tauri v2** and **Rust**. By leveraging Rust's `tokio` runtime for bare-metal network interception and Tauri's IPC for direct binary data streaming, we will build a proxy that uses a fraction of the RAM of its competitors. It will offer unlimited traffic manipulation rules for free and integrate a native OpenRouter AI engine for intelligent network debugging.
@@ -64,7 +64,7 @@ Deeply integrated, zero-subscription AI features utilizing the user's OpenRouter
     *   *Explain Error:* Analyzes 4xx/5xx responses and stack traces.
     *   *Generate Mock:* Reads request headers/parameters and writes a realistic JSON response, instantly saving it as a Map Local rule.
     *   *Code Generation:* Converts the request into `reqwest` (Rust), `fetch` (JS), or `curl` commands.
-*   **Prompt-Driven Scripting:** Instead of writing complex JavaScript to rewrite payloads (like in Proxyman), users can provide a natural language prompt (e.g., "Mask all email addresses in this JSON") and the local AI agent dynamically transforms the payload.
+*   **Prompt-Driven Scripting:** Instead of writing complex JavaScript to rewrite payloads (as in classic tools), users can provide a natural language prompt (e.g., "Mask all email addresses in this JSON") and the local AI agent dynamically transforms the payload.
 
 ---
 

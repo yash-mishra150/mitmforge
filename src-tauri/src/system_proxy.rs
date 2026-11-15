@@ -1,5 +1,5 @@
 //! Windows system proxy control (HKCU Internet Settings + WinINet refresh).
-//! What Proxyman's "Capture System Traffic" does: every proxy-aware app
+//! Classic capture-system-traffic behavior: every proxy-aware app
 //! (browsers, Node, curl, Electron...) starts routing through us. Previous
 //! settings are restored when we set them and the app exits.
 

@@ -1,5 +1,5 @@
 //! Attribute a captured client↔proxy socket pair to the local process that
-//! made it (Proxyman-style "Apps").
+//! made it ("Apps" column).
 //!
 //! Windows: scans the owner-module extended TCP table for the row whose
 //! local end is `client_addr` and remote end is `proxy_addr`, takes

@@ -42,7 +42,7 @@ pub fn shutdown_engine() {
 
 /// Starts the proxy engine once; traffic streams to the UI as `ProxyEvent`s.
 /// Called from the frontend *after* the event listener is attached, so early
-/// traffic is not lost. Proxyman-style: the system proxy turns on
+/// traffic is not lost. Classic debugger behavior: the system proxy turns on
 /// automatically, but only when the CA is trusted and the port is free — we
 /// never route traffic into a dead proxy. shortcut: if the engine dies,
 /// restarting needs an app relaunch (STARTED never resets); a lifecycle
@@ -194,8 +194,8 @@ pub async fn proxy_install_ca(app: AppHandle) -> Result<String, ProxyError> {
     }
 }
 
-/// Toggles Windows system-wide proxy capture (what Proxyman's "Capture System
-/// Traffic" does). Previous settings are restored when the app exits. Safe
+/// Toggles Windows system-wide proxy capture (the classic "capture system traffic"
+/// behavior). Previous settings are restored when the app exits. Safe
 /// without a trusted CA: HTTPS is blind-tunneled until the CA is installed,
 /// so nothing breaks.
 #[tauri::command]

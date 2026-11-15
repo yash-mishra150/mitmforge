@@ -4,7 +4,7 @@ Guide for AI coding agents working in this repo. Pair with `docs/ARCHITECTURE.md
 
 ## What this is
 
-Native HTTP/HTTPS MITM debugging proxy (Proxyman/Charles alternative), Tauri 2 + React 19 + TypeScript + Rust, Windows-first. Capture core works end-to-end; per `docs/ROADMAP.md`, Phase 3a (engine fields, client attribution, sidebar views, filters, analytics, recording, auto-save) is the active track. Product spec: `docs/next_gen_proxy_brd.md` — it predates the code; where they disagree the code is newer.
+Native HTTP/HTTPS MITM debugging proxy (classic debugging-proxy workflow), Tauri 2 + React 19 + TypeScript + Rust, Windows-first. Capture core works end-to-end; per `docs/ROADMAP.md`, Phase 3a (engine fields, client attribution, sidebar views, filters, analytics, recording, auto-save) is the active track. Product spec: `docs/next_gen_proxy_brd.md` — it predates the code; where they disagree the code is newer.
 
 ## Commands
 
@@ -41,7 +41,7 @@ Single test: `cargo test --test proxy_engine` (binds 127.0.0.1:18080/18081, no n
 
 ## Conventions
 
-- UI layout: Proxyman-style — top bar (left: Pause/Stop/Clear icons; center: "mitmforge | Listening on..."; right: placeholder icons), filter tabs below (All/HTTP/HTTPS/WebSocket/JSON/Form/XML/JS/CSS/GraphQL/Document/Media/Other), traffic table (ID | URL | Client | Method | Status | Time | Duration | SSL | Request | Edited).
+- UI layout: classic debugger style — top bar (left: Pause/Stop/Clear icons; center: "mitmforge | Listening on..."; right: placeholder icons), filter tabs below (All/HTTP/HTTPS/WebSocket/JSON/Form/XML/JS/CSS/GraphQL/Document/Media/Other), traffic table (ID | URL | Client | Method | Status | Time | Duration | SSL | Request | Edited).
 - Icons: Lucide icons (`lucide-react`) strictly — no emoji, no inline SVGs. Icons used: Pause, Play, StopCircle, Trash2, Settings, Minus, Square, X, Globe, ShieldCheck, Save, Sparkles, ScrollText, LayoutDashboard. Add to AGENTS.md if introducing a new one.
 - New features: backend command + specta types first, frontend via `call(commands.x())` from `src/platform/ipc.ts`.
 - Add tests for engine-level logic (see `tests/proxy_engine.rs` pattern: real exchange through the proxy, local upstream, no network).

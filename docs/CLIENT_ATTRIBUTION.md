@@ -2,7 +2,7 @@
 
 ## Overview
 
-Each captured HTTP/HTTPS request is now attributed to the local process that originated it — analogous to Proxyman's "Apps" column or Charles' "Client" field.
+Each captured HTTP/HTTPS request is now attributed to the local process that originated it — analogous to the "Apps" column in classic macOS-style debuggers or the "Client" field in other HTTP debuggers.
 
 ## Implementation
 

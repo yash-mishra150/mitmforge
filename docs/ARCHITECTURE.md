@@ -33,7 +33,7 @@ MitmForge is a Tauri 2 desktop app: a React frontend (TypeScript) driving a Rust
 - **Correlation**: hudsucker passes each request/response pair to the same handler instance, so a FIFO queue (`pending`) correlates responses to requests. Sequential HTTP/1.1 only (hudsucker's `http2` feature is off; multiplexing needs different plumbing).
 - **Bodies**: tee capture — every chunk forwards untouched while up to 64 KB is copied into `BodyStore` (500 exchanges, FIFO eviction). Never buffers or corrupts streams. The UI fetches bodies lazily via the `traffic_body` command (BRD: lazy-load heavy payloads).
 - **Headers** are captured synchronously and stored alongside bodies.
-- **CONNECT tunnels**: logged like Proxyman (with headers, answered 200 by interception), kept out of the correlation queue.
+- **CONNECT tunnels**: logged with headers like a classic debugger (answered 200 by interception), kept out of the correlation queue.
 - **TLS decision**: `should_intercept_tls` follows the CA-trusted state. No trusted CA → blind tunnel (real certificates pass through, nothing breaks, only CONNECT rows show). CA installed → decrypt. `set_intercept_tls()` flips it at launch and when Trust CA succeeds.
 - **Certificates**: the CA (`ca.cer` + `ca.key`) persists in the app-data dir and is loaded on subsequent runs; regenerated only if missing. It carries `digitalSignature | keyCertSign | cRLSign` (Windows rejects CA chains without `keyCertSign`).
 

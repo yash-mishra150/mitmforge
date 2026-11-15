@@ -1,6 +1,6 @@
 # MitmForge
 
-A free, open-source **native HTTP/HTTPS debugging proxy** for Windows — the Proxyman/Charles experience, rebuilt with Tauri 2 + Rust. No subscriptions, no feature paywalls, uncapped.
+A free, open-source **native HTTP/HTTPS debugging proxy** for Windows — rebuilt natively with Tauri 2 + Rust. No subscriptions, no feature paywalls, uncapped.
 
 > Status: **early development** (Phase 3 of the roadmap). The capture core works on Windows today; UI and traffic-modification features are being built. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
