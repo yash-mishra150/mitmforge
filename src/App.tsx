@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -23,16 +23,29 @@ import {
   X,
   Globe,
   ShieldCheck,
-  Save,
+  FileDown,
   Sparkles,
   Loader2,
   Search,
-  FileDown,
   Zap,
 } from "lucide-react";
+import { contentCategory } from "./features/traffic/selectors";
 
 const PROXY_EVENT = "proxy://event";
 const CONTENT_TABS = ["All", "HTTP", "HTTPS", "WebSocket", "JSON", "Form", "XML", "JS", "CSS", "GraphQL", "Document", "Media", "Other"] as const;
+
+/** contentCategory() result → CONTENT_TABS pill label. */
+const TAB_BY_CATEGORY: Record<string, string> = {
+  json: "JSON",
+  form: "Form",
+  xml: "XML",
+  js: "JS",
+  css: "CSS",
+  graphql: "GraphQL",
+  document: "Document",
+  media: "Media",
+  other: "Other",
+};
 
 const appWindow = getCurrentWindow();
 
@@ -49,7 +62,6 @@ export default function App() {
   const [proxyStarting, setProxyStarting] = useState(false);
   const [system, setSystem] = useState(false);
   const [caTrusted, setCaTrusted] = useState(false);
-  const [autoSave, setAutoSave] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [message, setMessage] = useState("");
@@ -59,7 +71,35 @@ export default function App() {
   // record button, which would flash the splash on every resume.
   const [booting, setBooting] = useState(true);
   const sidebarView = useTraffic((s) => s.sidebarView);
+  const rows = useTraffic((s) => s.rows);
   const aiSettings = loadAiSettings();
+
+  // Per-pill traffic counts; one pass over rows, keyed by pill label.
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const tab of CONTENT_TABS) counts[tab] = 0;
+    for (const r of rows) {
+      counts.All++;
+      if (r.scheme === "http") counts.HTTP++;
+      else if (r.scheme === "https") counts.HTTPS++;
+      if (r.url.startsWith("ws://") || r.url.startsWith("wss://")) counts.WebSocket++;
+      const tab = TAB_BY_CATEGORY[contentCategory(r.resContentType, r.req_content_type)];
+      if (tab) counts[tab]++;
+    }
+    return counts;
+  }, [rows]);
+
+  // Ctrl+F / Cmd+F focuses the traffic filter.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        document.getElementById("traffic-search")?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     applyTheme(loadTheme());
@@ -131,10 +171,30 @@ export default function App() {
       .catch((e: Error) => setMessage(String(e)));
   };
 
-  const toggleAutoSave = () => {
-    const target = !autoSave;
-    setAutoSave(target);
-    void commands.trafficAutosave(target).then(() => setMessage(target ? "Auto-save on" : "Auto-save off"));
+  const exportHar = () => {
+    const rows = useTraffic.getState().rows;
+    const har = {
+      log: {
+        version: "1.2",
+        creator: { name: "MitmForge", version: "0.1.0" },
+        entries: rows.map((r) => ({
+          startedDateTime: new Date(r.started_at_ms).toISOString(),
+          time: r.durationMs ?? 0,
+          request: { method: r.method, url: r.url, headers: [], queryString: [], cookies: [], headersSize: -1, bodySize: r.req_size ?? 0 },
+          response: { status: r.status ?? 0, headers: [], content: { size: r.resSize ?? 0, mimeType: r.resContentType ?? "" }, cookies: [], headersSize: -1, bodySize: r.resSize ?? 0 },
+          cache: {},
+          _client: r.client ?? undefined,
+          _scheme: r.scheme,
+        })),
+      },
+    };
+    const blob = new Blob([JSON.stringify(har, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "mitmforge-traffic.har";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    setMessage(`Exported ${rows.length} entries to HAR`);
   };
 
   const toggleRecording = () => {
@@ -183,33 +243,6 @@ export default function App() {
 
   const toggleContentTab = (type: string) => {
     setContentTabs((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [type]));
-  };
-
-  const exportHar = () => {
-    const rows = useTraffic.getState().rows;
-    const har = {
-      log: {
-        version: "1.2",
-        creator: { name: "MitmForge", version: "0.1.0" },
-        entries: rows.map((r) => ({
-          startedDateTime: new Date(r.started_at_ms).toISOString(),
-          time: r.durationMs ?? 0,
-          request: { method: r.method, url: r.url, headers: [], queryString: [], cookies: [], headersSize: -1, bodySize: r.req_size ?? 0 },
-          response: { status: r.status ?? 0, headers: [], content: { size: r.resSize ?? 0, mimeType: r.resContentType ?? "" }, cookies: [], headersSize: -1, bodySize: r.resSize ?? 0 },
-          cache: {},
-          _client: r.client ?? undefined,
-          _scheme: r.scheme,
-        })),
-      },
-    };
-    const blob = new Blob([JSON.stringify(har, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "mitmforge-traffic.har";
-    a.click();
-    URL.revokeObjectURL(url);
-    setMessage(`Exported ${rows.length} entries to HAR`);
   };
 
   return (
@@ -296,12 +329,12 @@ export default function App() {
           </button>
           <button
             type="button"
-            onClick={toggleAutoSave}
-            className={`${ICON_BTN} ${autoSave ? "text-success border-success/30 bg-success/5" : ""}`}
-            title={`Auto-save ${autoSave ? "on" : "off"}`}
-            aria-label={`Auto-save ${autoSave ? "on" : "off"}`}
+            onClick={exportHar}
+            className={ICON_BTN}
+            title="Export session (.har)"
+            aria-label="Export session"
           >
-            <Save size={14} />
+            <FileDown size={14} />
           </button>
           <button
             type="button"
@@ -353,66 +386,61 @@ export default function App() {
         </div>
       </header>
 
-      {/* Action surface: search + filter presets (left) + tool toggles (right) */}
-      <div className="flex h-11 items-center gap-2 border-b border-line bg-app px-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <div className="flex min-w-0 max-w-xl flex-1 items-center rounded-lg border border-line bg-app px-2.5 py-1.5 transition-all focus-within:border-success">
-            <Search className="mr-2 h-3.5 w-3.5 shrink-0 text-muted" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filter (e.g. status:200, host:api, /chat)..."
-              className="min-w-0 flex-1 bg-transparent font-mono text-[12px] text-fg placeholder:text-muted focus:outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1.5">
-          <button
-            type="button"
-            onClick={exportHar}
-            className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[11px] font-medium text-muted transition-colors hover:border-accent/50 hover:text-fg"
-            title="Export traffic as HAR"
-          >
-            <FileDown size={14} />
-            <span className="hidden lg:inline">Export HAR</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Filter preset pills */}
-      <div className="flex min-h-9 flex-wrap items-center gap-1.5 border-b border-line bg-app px-3 py-1.5">
-        <span className="mr-1 hidden shrink-0 text-[11px] font-medium text-muted sm:inline">Presets:</span>
-        {CONTENT_TABS.map((tab) => {
-          const isActive = contentTabs.includes(tab);
-          return (
+      {/* Filter pill bar: presets (left) + search (right) */}
+      <nav className="flex h-9 shrink-0 items-center justify-between gap-3 border-b border-line bg-app px-3">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto py-0.5 scrollbar-hide [&::-webkit-scrollbar]:hidden">
+          {CONTENT_TABS.map((tab) => {
+            const isActive = contentTabs.includes(tab);
+            const count = categoryCounts[tab] ?? 0;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => toggleContentTab(tab)}
+                className={`shrink-0 whitespace-nowrap ${
+                  isActive
+                    ? "rounded border border-accent/30 bg-accent/15 px-2.5 py-1 text-[11px] font-medium text-accent"
+                    : "rounded px-2.5 py-1 text-[11px] font-medium text-muted transition-colors hover:text-fg hover:bg-[color-mix(in_srgb,var(--mt-text)_5%,transparent)]"
+                }`}
+              >
+                {tab}
+                {(isActive || count > 0) && (
+                  <span
+                    className={`ml-1 rounded px-1 font-mono text-[9px] ${
+                      isActive ? "bg-accent/20 text-accent" : "bg-surface text-muted"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+          {search && (
             <button
-              key={tab}
               type="button"
-              onClick={() => toggleContentTab(tab)}
-              className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-all duration-150 ${
-                isActive
-                  ? "bg-accent text-app shadow-sm"
-                  : "border border-line bg-surface text-muted hover:border-accent/50 hover:text-fg"
-              }`}
+              onClick={() => setSearch("")}
+              className="flex shrink-0 items-center gap-1 rounded border border-line bg-surface px-1.5 py-0.5 text-[11px] text-muted transition-colors hover:text-danger"
+              title="Clear search filter"
             >
-              {tab}
+              <X size={11} />
+              "{search}"
             </button>
-          );
-        })}
-        {search && (
-          <button
-            type="button"
-            onClick={() => setSearch("")}
-            className="flex shrink-0 items-center gap-1 rounded-full border border-line bg-surface px-2.5 py-0.5 text-[11px] text-muted transition-colors hover:text-danger"
-            title="Clear search filter"
-          >
-            <X size={11} />
-            "{search}"
-          </button>
-        )}
-      </div>
+          )}
+        </div>
+        <div className="relative w-64 shrink-0">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+          <input
+            id="traffic-search"
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Filter URLs, headers, payloads..."
+            className="w-full rounded border border-line bg-surface py-1 pl-8 pr-12 text-[11px] text-fg placeholder:text-muted focus:border-accent focus:outline-none"
+          />
+          <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-line bg-surface px-1 py-0.5 font-mono text-[9px] text-muted">Ctrl+F</kbd>
+        </div>
+      </nav>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <Sidebar onViewChange={(v: "log" | "overview") => setView(v)} />
@@ -434,3 +462,4 @@ export default function App() {
     </div>
   );
 }
+

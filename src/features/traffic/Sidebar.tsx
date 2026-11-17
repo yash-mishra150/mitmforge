@@ -83,98 +83,96 @@ export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overvi
   const duration = `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
   const httpCount = rows.filter((r) => r.scheme === "http").length;
 
-  if (!expanded) {
-    return (
-      <aside className="flex w-[52px] shrink-0 select-none flex-col items-center justify-between border-r border-line bg-surface py-2.5">
-        <div className="flex w-full flex-col items-center space-y-3">
+  const railView = (
+    <>
+      <div className="flex w-full flex-col items-center space-y-3">
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          title="Expand sidebar"
+          className="group relative flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] hover:text-fg"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        <div className="relative flex h-8 w-8 items-center justify-center" title="Capturing">
+          <span className="absolute h-4 w-4 animate-ping rounded-full bg-success/20" />
+          <span className="h-2.5 w-2.5 rounded-full bg-success ring-2 ring-success/30" />
+        </div>
+        <div className="h-px w-7 bg-line" />
+        <RailButton
+          active={sidebarView === "capture"}
+          badge={rows.length}
+          title={`Live Capture (${rows.length})`}
+          onClick={() => {
+            onViewChange("log");
+            clearFilters();
+          }}
+          icon={<Zap className="h-4 w-4" />}
+        />
+        <RailButton
+          title="Overview"
+          onClick={() => onViewChange("overview")}
+          icon={<Monitor className="h-4 w-4" />}
+        />
+        <RailButton
+          active={sidebarView === "favorites"}
+          title="Favorites"
+          onClick={() => setSidebarView("favorites")}
+          icon={<Star className="h-4 w-4" />}
+        />
+        <RailButton
+          active={sidebarView === "pinned"}
+          badge={pinnedData.length}
+          title={`Pinned (${pinnedData.length})`}
+          onClick={() => setSidebarView("pinned")}
+          icon={<Pin className="h-4 w-4" />}
+        />
+        <div className="h-px w-7 bg-line" />
+        {appData.slice(0, 5).map((a) => (
           <button
+            key={a.client}
             type="button"
-            onClick={() => setExpanded(true)}
-            title="Expand sidebar"
-            className="group relative flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] hover:text-fg"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          <div className="relative flex h-8 w-8 items-center justify-center" title="Capturing">
-            <span className="absolute h-4 w-4 animate-ping rounded-full bg-success/20" />
-            <span className="h-2.5 w-2.5 rounded-full bg-success ring-2 ring-success/30" />
-          </div>
-          <div className="h-px w-7 bg-line" />
-          <RailButton
-            active={sidebarView === "capture"}
-            badge={rows.length}
-            title={`Live Capture (${rows.length})`}
-            onClick={() => {
-              onViewChange("log");
-              clearFilters();
-            }}
-            icon={<Zap className="h-4 w-4" />}
-          />
-          <RailButton
-            title="Overview"
-            onClick={() => onViewChange("overview")}
-            icon={<Monitor className="h-4 w-4" />}
-          />
-          <RailButton
-            active={sidebarView === "favorites"}
-            title="Favorites"
-            onClick={() => setSidebarView("favorites")}
-            icon={<Star className="h-4 w-4" />}
-          />
-          <RailButton
-            active={sidebarView === "pinned"}
-            badge={pinnedData.length}
-            title={`Pinned (${pinnedData.length})`}
-            onClick={() => setSidebarView("pinned")}
-            icon={<Pin className="h-4 w-4" />}
-          />
-          <div className="h-px w-7 bg-line" />
-          {appData.slice(0, 5).map((a) => (
-            <button
-              key={a.client}
-              type="button"
-              onClick={() => setClientFilter(clientFilter === a.client ? null : a.client)}
-              title={`${a.client} (${a.count} requests)`}
-              className={`relative flex h-8 w-8 items-center justify-center rounded-lg border font-bold text-[10px] ${monoColor(a.client)} ${
-                clientFilter === a.client ? "ring-1 ring-accent" : ""
-              }`}
-            >
-              {monogram(a.client)}
-              {a.count > 0 && (
-                <span className="absolute -bottom-1 -right-1 rounded-full border border-surface bg-accent px-1 text-[8px] font-mono leading-tight text-app">
-                  {a.count}
-                </span>
-              )}
-            </button>
-          ))}
-          <div className="h-px w-7 bg-line" />
-          <button
-            type="button"
-            onClick={() => setHostFilter(null)}
-            title={httpCount > 0 ? `${httpCount} unencrypted HTTP streams` : "All traffic encrypted"}
-            className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-              httpCount > 0 ? "text-warning hover:bg-warning/10" : "text-success hover:bg-success/10"
+            onClick={() => setClientFilter(clientFilter === a.client ? null : a.client)}
+            title={`${a.client} (${a.count} requests)`}
+            className={`relative flex h-8 w-8 items-center justify-center rounded-lg border font-bold text-[10px] ${monoColor(a.client)} ${
+              clientFilter === a.client ? "ring-1 ring-accent" : ""
             }`}
           >
-            {httpCount > 0 ? <LockOpen className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+            {monogram(a.client)}
+            {a.count > 0 && (
+              <span className="absolute -bottom-1 -right-1 rounded-full border border-surface bg-accent px-1 text-[8px] font-mono leading-tight text-app">
+                {a.count}
+              </span>
+            )}
           </button>
-        </div>
-        <div className="flex flex-col items-center space-y-2">
-          <button
-            type="button"
-            title="Search"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] hover:text-fg"
-          >
-            <Search className="h-4 w-4" />
-          </button>
-          <span className="h-1.5 w-1.5 rounded-full bg-success" title="System proxy on" />
-        </div>
-      </aside>
-    );
-  }
+        ))}
+        <div className="h-px w-7 bg-line" />
+        <button
+          type="button"
+          onClick={() => setHostFilter(null)}
+          title={httpCount > 0 ? `${httpCount} unencrypted HTTP streams` : "All traffic encrypted"}
+          className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+            httpCount > 0 ? "text-warning hover:bg-warning/10" : "text-success hover:bg-success/10"
+          }`}
+        >
+          {httpCount > 0 ? <LockOpen className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+        </button>
+      </div>
+      <div className="flex flex-col items-center space-y-2">
+        <button
+          type="button"
+          title="Search"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] hover:text-fg"
+        >
+          <Search className="h-4 w-4" />
+        </button>
+        <span className="h-1.5 w-1.5 rounded-full bg-success" title="System proxy on" />
+      </div>
+    </>
+  );
 
-  return (
-    <aside className="flex w-[260px] shrink-0 select-none flex-col overflow-hidden border-r border-line bg-surface">
+  const expandedView = (
+    <>
       <div className="flex-1 space-y-3.5 overflow-y-auto overflow-x-hidden p-2.5">
         {/* Capture cockpit */}
         <div className="rounded-lg border border-line bg-app p-2.5 transition-colors hover:border-line">
@@ -335,6 +333,29 @@ export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overvi
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
       </div>
+    </>
+  );
+
+  return (
+    <aside
+      className={`relative flex h-full shrink-0 select-none flex-col overflow-hidden border-r border-line bg-surface transition-[width] duration-300 ease-in-out ${
+        expanded ? "w-[260px]" : "w-[52px]"
+      }`}
+    >
+      <div
+        className={`absolute inset-0 flex w-[52px] flex-col items-center justify-between py-2.5 transition-opacity duration-200 ${
+          expanded ? "pointer-events-none invisible opacity-0" : "opacity-100 visible"
+        }`}
+      >
+        {railView}
+      </div>
+      <div
+        className={`absolute inset-0 flex w-[260px] flex-col overflow-hidden transition-opacity duration-200 ${
+          expanded ? "opacity-100 visible" : "pointer-events-none invisible opacity-0"
+        }`}
+      >
+        {expandedView}
+      </div>
     </aside>
   );
 }
@@ -407,3 +428,4 @@ function ViewCard({
 function Empty() {
   return <div className="px-3 py-2 text-center text-xs text-muted/50">No data captured yet</div>;
 }
+
