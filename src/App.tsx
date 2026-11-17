@@ -317,7 +317,6 @@ export default function App() {
               placeholder="Filter (e.g. status:200, host:api, /chat)..."
               className="min-w-0 flex-1 bg-transparent font-mono text-[12px] text-fg placeholder:text-muted focus:outline-none"
             />
-            <kbd className="ml-2 hidden shrink-0 rounded bg-surface px-1.5 py-0.5 text-[10px] font-mono text-muted md:block">ESC</kbd>
           </div>
         </div>
 
