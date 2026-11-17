@@ -83,7 +83,7 @@ export function Overview() {
   }
 
   return (
-    <div className="flex flex-col gap-4 overflow-auto p-4">
+    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
       {/* Hero header */}
       <div>
         <div className="flex items-center gap-2 mb-1.5">
