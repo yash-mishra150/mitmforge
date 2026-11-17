@@ -2,8 +2,7 @@ import { memo, useCallback, useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTraffic, type TrafficRow } from "./store";
 import { RowDetail } from "./RowDetail";
-import { contentCategory } from "./selectors";
-import { parseHost } from "./selectors";
+import { matchesTab, parseHost } from "./selectors";
 import { FileText, Maximize2 } from "lucide-react";
 
 /** 8-track grid: # | Method | Status | Path/Host | Client | Latency | Size | Actions */
@@ -146,22 +145,13 @@ export function TrafficGrid({ activeTabs, sidebarView, search }: TrafficGridProp
   const suspicious = useTraffic((s) => s.suspicious);
   const parentRef = useRef<HTMLDivElement>(null);
 
-  const mergedContentFilters = useMemo(() => {
-    const tabs = activeTabs.filter((t) => t !== "All");
-    return tabs.length > 0 ? tabs : [];
-  }, [activeTabs]);
-
   const q = search.trim().toLowerCase();
 
   const filteredRows = useMemo(
     () =>
       rows.filter((row) => {
-        // Content type filter
-        if (
-          mergedContentFilters.length > 0 &&
-          !mergedContentFilters.includes(contentCategory(row.resContentType, row.req_content_type))
-        )
-          return false;
+        // Content-type / scheme filter tabs (OR across active tabs)
+        if (activeTabs.length > 0 && !activeTabs.some((t) => matchesTab(row, t))) return false;
         // Search filter (matches URL or client process)
         if (q && !row.url.toLowerCase().includes(q) && !(row.client ?? "").toLowerCase().includes(q))
           return false;
@@ -177,7 +167,7 @@ export function TrafficGrid({ activeTabs, sidebarView, search }: TrafficGridProp
         // "all", "capture", null, undefined -> show all
         return true;
       }),
-    [rows, mergedContentFilters, q, hostFilter, clientFilter, sidebarView, pinned],
+    [rows, activeTabs, q, hostFilter, clientFilter, sidebarView, pinned],
   );
 
   const virtualizer = useVirtualizer({

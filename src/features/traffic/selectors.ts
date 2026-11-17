@@ -103,3 +103,25 @@ export function contentCategory(res: string | null, req: string | null): string 
   if (t.includes("image") || t.includes("audio") || t.includes("video")) return "media";
   return "other";
 }
+
+/**
+ * Does a row match a filter-pill tab? Single source of truth shared by the
+ * grid filter and the pill count badges, so counts always equal what the
+ * filter will actually show. Scheme tabs (HTTP/HTTPS/WebSocket) are matched
+ * by scheme/URL, content tabs by MIME category (case-insensitive display
+ * names like "JSON" map to their lowercase category keys).
+ */
+export function matchesTab(
+  row: Pick<TrafficRow, "scheme" | "url" | "resContentType" | "req_content_type">,
+  tab: string,
+): boolean {
+  const name = tab.toLowerCase();
+  if (name === "http") return row.scheme === "http";
+  if (name === "https") return row.scheme === "https" || row.scheme === "tunnel";
+  if (name === "websocket") {
+    const u = row.url.toLowerCase();
+    return u.startsWith("ws://") || u.startsWith("wss://") || (row.resContentType ?? "").toLowerCase().includes("websocket");
+  }
+  if (name === "all") return true;
+  return contentCategory(row.resContentType, row.req_content_type) === name;
+}

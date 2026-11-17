@@ -443,7 +443,7 @@ export default function App() {
       </nav>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <Sidebar onViewChange={(v: "log" | "overview") => setView(v)} />
+        <Sidebar view={view} onViewChange={(v: "log" | "overview") => setView(v)} />
         <div className="min-w-0 flex-1">
           {view === "log" ? <TrafficGrid activeTabs={contentTabs} sidebarView={sidebarView} search={search} /> : <Overview />}
         </div>

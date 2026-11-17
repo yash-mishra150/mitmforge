@@ -50,7 +50,7 @@ function sparkline(rows: Array<{ started_at_ms: number }>): string {
 }
 
 /** Left nav: collapsible rail (52px) ↔ expanded cockpit (260px). */
-export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overview") => void }) {
+export function Sidebar({ view, onViewChange }: { view: "log" | "overview"; onViewChange: (view: "log" | "overview") => void }) {
   const [expanded, setExpanded] = useState(true);
   const rows = useTraffic((s) => s.rows);
   const pinned = useTraffic((s) => s.pinned);
@@ -219,7 +219,7 @@ export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overvi
                 clearFilters();
               }}
             />
-            <ViewCard label="Errors" count={rows.filter((r) => r.status !== null && r.status >= 400).length} dot="bg-danger" onClick={() => onViewChange("log")} />
+            <ViewCard label="Dashboard" count={rows.length} active={view === "overview"} dot="bg-accent" onClick={() => onViewChange("overview")} />
             <ViewCard label="Pinned" count={pinnedData.length} dot="bg-warning" onClick={() => setSidebarView("pinned")} />
             <ViewCard label="Favorites" count={0} dot="bg-warning" onClick={() => setSidebarView("favorites")} />
           </div>
@@ -245,10 +245,10 @@ export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overvi
                     key={a.client}
                     type="button"
                     onClick={() => setClientFilter(clientFilter === a.client ? null : a.client)}
-                    className={`flex w-full items-center justify-between rounded-lg border px-2 py-1.5 text-left transition-all ${
+                    className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all ${
                       clientFilter === a.client
                         ? "border-accent/30 bg-accent/10 text-fg"
-                        : "border-line bg-app text-muted hover:bg-app hover:text-fg"
+                        : "text-muted hover:bg-app hover:text-fg"
                     }`}
                   >
                     <span className="flex min-w-0 items-center gap-2">
@@ -293,10 +293,10 @@ export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overvi
                     key={d.host}
                     type="button"
                     onClick={() => setHostFilter(hostFilter === d.host ? null : d.host)}
-                    className={`flex w-full items-center justify-between rounded-lg border px-2 py-1.5 text-left transition-all ${
+                    className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left transition-all ${
                       hostFilter === d.host
                         ? "border-accent/30 bg-accent/10 text-fg"
-                        : "border-line bg-app text-muted hover:bg-app hover:text-fg"
+                        : "text-muted hover:bg-app hover:text-fg"
                     }`}
                   >
                     <span className="flex min-w-0 items-center gap-1.5">
