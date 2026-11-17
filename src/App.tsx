@@ -3,6 +3,7 @@ import "./App.css";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { commands, type ProxyEvent } from "./bindings";
+import logoUrl from "./assets/logo.png";
 import { TrafficGrid } from "./features/traffic/TrafficGrid";
 import { Sidebar } from "./features/traffic/Sidebar";
 import { Overview } from "./features/traffic/Overview";
@@ -27,7 +28,6 @@ import {
   Sparkles,
   Loader2,
   Search,
-  Zap,
 } from "lucide-react";
 import { contentCategory } from "./features/traffic/selectors";
 
@@ -253,9 +253,7 @@ export default function App() {
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex shrink-0 items-center gap-2">
             <div className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-[1px] shadow-sm shadow-indigo-500/20">
-              <div className="flex h-full w-full items-center justify-center rounded-[5px] bg-app">
-                <Zap className="h-3 w-3 text-accent" />
-              </div>
+              <img src={logoUrl} alt="MitmForge" className="h-full w-full rounded-[5px]" />
             </div>
             <span className="text-[13px] font-semibold tracking-wide text-fg">mitmforge</span>
           </div>
