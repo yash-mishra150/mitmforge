@@ -32,18 +32,18 @@ export interface Theme {
  */
 export const DEFAULT_THEME: Theme = {
   colors: {
-    bg: "#09090b",
-    surface: "#101012",
-    border: "#1f1f23",
-    text: "#fafafa",
-    textMuted: "#71717a",
-    accent: "#8b5cf6",
-    success: "#4ade80",
+    bg: "#0d0e13",
+    surface: "#1a1b21",
+    border: "#292a2f",
+    text: "#e3e1e9",
+    textMuted: "#908fa0",
+    accent: "#c0c1ff",
+    success: "#2fd9f4",
     warning: "#fbbf24",
-    danger: "#f87171",
+    danger: "#ffb4ab",
   },
-  fontFamily: '"Inter Variable", Inter, system-ui, sans-serif',
-  monoFontFamily: '"JetBrains Mono Variable", "JetBrains Mono", "Cascadia Mono", Consolas, monospace',
+  fontFamily: '"Poppins", system-ui, sans-serif',
+  monoFontFamily: '"Poppins", system-ui, sans-serif',
   fontSize: 13,
 };
 

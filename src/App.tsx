@@ -26,6 +26,8 @@ import {
   Save,
   Sparkles,
   Loader2,
+  Search,
+  FileDown,
 } from "lucide-react";
 
 const PROXY_EVENT = "proxy://event";
@@ -50,6 +52,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [message, setMessage] = useState("");
+  const [search, setSearch] = useState("");
   const [splash, setSplash] = useState(true);
   // One-shot "first boot" engine gate — proxyStarting is reused by the
   // record button, which would flash the splash on every resume.
@@ -181,6 +184,33 @@ export default function App() {
     setContentTabs((prev) => (prev.includes(type) ? prev.filter((t) => t !== type) : [type]));
   };
 
+  const exportHar = () => {
+    const rows = useTraffic.getState().rows;
+    const har = {
+      log: {
+        version: "1.2",
+        creator: { name: "MitmForge", version: "0.1.0" },
+        entries: rows.map((r) => ({
+          startedDateTime: new Date(r.started_at_ms).toISOString(),
+          time: r.durationMs ?? 0,
+          request: { method: r.method, url: r.url, headers: [], queryString: [], cookies: [], headersSize: -1, bodySize: r.req_size ?? 0 },
+          response: { status: r.status ?? 0, headers: [], content: { size: r.resSize ?? 0, mimeType: r.resContentType ?? "" }, cookies: [], headersSize: -1, bodySize: r.resSize ?? 0 },
+          cache: {},
+          _client: r.client ?? undefined,
+          _scheme: r.scheme,
+        })),
+      },
+    };
+    const blob = new Blob([JSON.stringify(har, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "mitmforge-traffic.har";
+    a.click();
+    URL.revokeObjectURL(url);
+    setMessage(`Exported ${rows.length} entries to HAR`);
+  };
+
   return (
     <div className="flex h-full flex-col bg-app text-fg">
       {/* Top bar — left: wired controls; center: status; right: settings + window controls */}
@@ -275,29 +305,22 @@ export default function App() {
         </div>
       </header>
 
-      {/* Below layer: filter tabs (left) + tool icons (right) */}
-      <div className="flex h-9 items-center justify-between border-b border-line bg-app px-2">
-        <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto scrollbar-hide">
-          {CONTENT_TABS.map((tab) => {
-            const isActive = contentTabs.includes(tab);
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => toggleContentTab(tab)}
-                className={`whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-medium text-muted transition-all duration-150 hover:text-fg hover:border-accent/50 ${
-                  isActive
-                    ? "bg-[color-mix(in_srgb,var(--mt-accent)_10%,transparent)] text-accent border-accent/30 shadow-[0_0_0_1px_var(--mt-accent)]"
-                    : "hover:border-accent/30 hover:bg-[color-mix(in_srgb,var(--mt-accent)_3%,transparent)]"
-                }`}
-              >
-                {tab}
-              </button>
-            );
-          })}
+      {/* Action surface: search + filter presets (left) + tool toggles (right) */}
+      <div className="flex h-11 items-center gap-2 border-b border-line bg-app px-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <div className="flex min-w-0 max-w-xl flex-1 items-center rounded-lg border border-line bg-app px-2.5 py-1.5 transition-all focus-within:border-success">
+            <Search className="mr-2 h-3.5 w-3.5 shrink-0 text-muted" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter (e.g. status:200, host:api, /chat)..."
+              className="min-w-0 flex-1 bg-transparent font-mono text-[12px] text-fg placeholder:text-muted focus:outline-none"
+            />
+            <kbd className="ml-2 hidden shrink-0 rounded bg-surface px-1.5 py-0.5 text-[10px] font-mono text-muted md:block">ESC</kbd>
+          </div>
         </div>
 
-        {/* Right: wired tool icons */}
         <div className="flex shrink-0 items-center gap-0.5">
           <button
             type="button"
@@ -336,13 +359,56 @@ export default function App() {
           >
             <Sparkles size={14} />
           </button>
+          <div className="h-4 w-px bg-line mx-1" />
+          <button
+            type="button"
+            onClick={exportHar}
+            className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[11px] font-medium text-muted transition-colors hover:border-accent/50 hover:text-fg"
+            title="Export traffic as HAR"
+          >
+            <FileDown size={14} />
+            <span className="hidden lg:inline">Export HAR</span>
+          </button>
         </div>
+      </div>
+
+      {/* Filter preset pills */}
+      <div className="flex h-9 items-center gap-1.5 overflow-x-auto border-b border-line bg-app px-3 py-1.5 scrollbar-hide">
+        <span className="hidden shrink-0 text-[11px] font-medium text-muted sm:inline">Presets:</span>
+        {CONTENT_TABS.map((tab) => {
+          const isActive = contentTabs.includes(tab);
+          return (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => toggleContentTab(tab)}
+              className={`shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-all duration-150 ${
+                isActive
+                  ? "bg-accent text-app shadow-sm"
+                  : "border border-line bg-surface text-muted hover:border-accent/50 hover:text-fg"
+              }`}
+            >
+              {tab}
+            </button>
+          );
+        })}
+        {search && (
+          <button
+            type="button"
+            onClick={() => setSearch("")}
+            className="flex shrink-0 items-center gap-1 rounded-full border border-line bg-surface px-2.5 py-0.5 text-[11px] text-muted transition-colors hover:text-danger"
+            title="Clear search filter"
+          >
+            <X size={11} />
+            "{search}"
+          </button>
+        )}
       </div>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <Sidebar onViewChange={(v: "log" | "overview") => setView(v)} />
         <div className="min-w-0 flex-1">
-          {view === "log" ? <TrafficGrid activeTabs={contentTabs} sidebarView={sidebarView} /> : <Overview />}
+          {view === "log" ? <TrafficGrid activeTabs={contentTabs} sidebarView={sidebarView} search={search} /> : <Overview />}
         </div>
       </div>
 
