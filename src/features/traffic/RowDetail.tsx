@@ -74,7 +74,7 @@ export function RowDetail({ row }: { row: TrafficRow }) {
   };
 
   return (
-    <div className="flex shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl">
+    <div className="flex h-80 shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl">
       {/* Summary strip */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface px-4 py-2.5">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
