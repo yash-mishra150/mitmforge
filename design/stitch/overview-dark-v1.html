@@ -1,0 +1,361 @@
+<!DOCTYPE html><html class="dark" lang="en"><svg class="inline-defs-container" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden"></svg><head><meta charset="utf-8"><meta content="1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"primary-fixed":"#e1e0ff","tertiary-fixed":"#a2eeff","inverse-primary":"#494bd6","secondary-fixed":"#e0e0ff","surface-bright":"#38393f","inverse-on-surface":"#2f3036","outline":"#908fa0","surface-tint":"#c0c1ff","on-surface":"#e3e1e9","surface-container-lowest":"#0d0e13","error":"#ffb4ab","background":"#121318","inverse-surface":"#e3e1e9","tertiary":"#2fd9f4","error-container":"#93000a","secondary":"#bdc2ff","on-error":"#690005","on-secondary-fixed":"#000767","secondary-fixed-dim":"#bdc2ff","on-secondary":"#131e8c","on-error-container":"#ffdad6","surface-container-highest":"#34343a","tertiary-container":"#008395","surface-dim":"#121318","on-primary":"#1000a9","secondary-container":"#2f3aa3","surface-container-high":"#292a2f","on-secondary-container":"#a8afff","on-primary-fixed-variant":"#2f2ebe","primary-fixed-dim":"#c0c1ff","surface":"#121318","primary":"#c0c1ff","on-tertiary":"#00363e","outline-variant":"#464554","primary-container":"#8083ff","on-secondary-fixed-variant":"#2f3aa3","on-primary-container":"#0d0096","on-tertiary-fixed-variant":"#004e5a","on-background":"#e3e1e9","on-tertiary-container":"#000608","on-tertiary-fixed":"#001f25","surface-container":"#1e1f25","on-surface-variant":"#c7c4d7","tertiary-fixed-dim":"#2fd9f4"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"margin-desktop":"2rem","space-sm":"0.5rem","gutter-desktop":"1.5rem","space-lg":"1.25rem","margin":"1rem","space-xl":"2rem","space-md":"0.75rem","gutter":"1rem","space-xs":"0.25rem"},"fontFamily":{"body-sm":["Geist"],"display":["Geist"],"headline-sm":["Geist"],"body-lg":["Geist"],"headline-lg":["Geist"],"headline-lg-mobile":["Geist"],"body-md":["Geist"],"headline-md":["Geist"],"code-md":["JetBrains Mono"],"label-md":["Geist"],"label-mono":["JetBrains Mono"]},"fontSize":{"body-sm":["12px",{"lineHeight":"18px","letterSpacing":"0em","fontWeight":"400"}],"display":["40px",{"lineHeight":"48px","letterSpacing":"-0.03em","fontWeight":"600"}],"headline-sm":["18px",{"lineHeight":"24px","letterSpacing":"-0.015em","fontWeight":"500"}],"body-lg":["15px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"400"}],"headline-lg":["30px",{"lineHeight":"38px","letterSpacing":"-0.025em","fontWeight":"600"}],"headline-lg-mobile":["24px",{"lineHeight":"32px","letterSpacing":"-0.02em","fontWeight":"600"}],"body-md":["13px",{"lineHeight":"20px","letterSpacing":"-0.005em","fontWeight":"400"}],"headline-md":["22px",{"lineHeight":"28px","letterSpacing":"-0.02em","fontWeight":"500"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.01em","fontWeight":"500"}],"code-md":["12px",{"lineHeight":"18px","letterSpacing":"-0.01em","fontWeight":"400"}],"label-mono":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"500"}]}}}};</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 left-0 right-0 h-14 z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"></header><main class="w-full pt-14 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<!-- Sub-navigation & Live Filter Ribbon -->
+
+<!-- Primary Content Area -->
+<div class="w-full max-w-[1440px] mx-auto px-gutter-desktop py-space-xl flex flex-col gap-space-xl">
+<!-- Hero Header: Asymmetric, modern, whisper-quiet headline -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+<div>
+<div class="flex items-center gap-2 mb-1.5">
+<span class="font-label-mono text-label-mono uppercase tracking-widest text-primary">Edge Node // us-east-1</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="font-label-mono text-label-mono text-on-surface-variant">v3.4.1-rc</span>
+</div>
+<h1 class="font-display text-display text-on-surface tracking-tight">Overview &amp; Insights</h1>
+</div>
+<div class="flex items-center gap-space-sm self-start md:self-auto">
+<div class="flex -space-x-1.5 overflow-hidden">
+
+
+
+</div>
+
+</div>
+</div>
+<!-- 3 Ultra-Minimal Hero Metric Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-lg">
+<!-- Card 1: Total Requests -->
+<div class="relative group p-space-lg rounded-xl bg-surface-container-low transition-all duration-300 hover:bg-surface-container hover:shadow-lg">
+<div class="flex items-center justify-between mb-space-md">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Total Invocations</span>
+<span class="px-2 py-0.5 rounded-full font-label-mono text-label-mono bg-tertiary/10 text-tertiary flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px]">trending_up</span>+12.4%
+          </span>
+</div>
+<div class="flex items-baseline gap-space-sm mb-space-xs">
+<span class="font-display text-display text-on-surface">1,248</span>
+<span class="font-code-md text-code-md text-on-surface-variant">reqs</span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-body-sm text-body-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span>Nominal ingress volume across proxies</span>
+</div>
+<!-- Subtle back glow -->
+<div class="absolute -right-4 -bottom-4 w-24 h-24 bg-tertiary/5 rounded-full blur-2xl group-hover:bg-tertiary/10 transition-all pointer-events-none"></div>
+</div>
+<!-- Card 2: Avg Latency -->
+<div class="relative group p-space-lg rounded-xl bg-surface-container-low transition-all duration-300 hover:bg-surface-container hover:shadow-lg">
+<div class="flex items-center justify-between mb-space-md">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Avg Roundtrip Latency</span>
+<span class="px-2 py-0.5 rounded-full font-label-mono text-label-mono bg-primary/10 text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px]">bolt</span>99.8th pctl
+          </span>
+</div>
+<div class="flex items-baseline gap-space-sm mb-space-xs">
+<span class="font-display text-display text-on-surface">48</span>
+<span class="font-code-md text-code-md text-on-surface-variant">ms</span>
+</div>
+<div class="flex items-center gap-1.5 text-secondary font-body-sm text-body-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-medium text-on-surface">Lightning fast · 4ms cache hit</span>
+</div>
+<div class="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all pointer-events-none"></div>
+</div>
+<!-- Card 3: Security Score -->
+<div class="relative group p-space-lg rounded-xl bg-surface-container-low transition-all duration-300 hover:bg-surface-container hover:shadow-lg">
+<div class="flex items-center justify-between mb-space-md">
+<span class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant">Shield Defense State</span>
+<span class="px-2 py-0.5 rounded-full font-label-mono text-label-mono bg-tertiary/10 text-tertiary flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px]">verified</span>Active
+          </span>
+</div>
+<div class="flex items-baseline gap-space-sm mb-space-xs">
+<span class="font-display text-display text-on-surface">99.4</span>
+<span class="font-code-md text-code-md text-on-surface-variant">%</span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-body-sm text-body-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+<span class="font-medium text-on-surface">All systems secure</span>
+<span>· 0 leaks</span>
+</div>
+<div class="absolute -right-4 -bottom-4 w-24 h-24 bg-tertiary/5 rounded-full blur-2xl group-hover:bg-tertiary/10 transition-all pointer-events-none"></div>
+</div>
+</div>
+<!-- Main Visual Grid: Area Chart + Side Panels -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- Area Chart: Smooth, Organic Traffic Volume (8 Cols) -->
+<div class="lg:col-span-8 p-space-lg rounded-xl bg-surface-container-low flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between mb-space-lg">
+<div>
+<span class="font-label-mono text-label-mono uppercase tracking-widest text-on-surface-variant">Telemetry Flow</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface mt-0.5">Traffic Volume</h2>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="font-label-md text-label-md text-on-surface-variant">Intercepted</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="font-label-md text-label-md text-on-surface-variant">Cached (200 OK)</span>
+</div>
+</div>
+</div>
+<!-- SVG Organic Smooth Stream Graph -->
+<div class="relative w-full h-[280px] select-none group" id="chart-container">
+<!-- Interactive Tooltip Overlay (Calculated on Hover) -->
+<div class="absolute pointer-events-none transition-all duration-150 transform -translate-x-1/2 -translate-y-full opacity-0 px-2.5 py-1.5 rounded-lg bg-surface-container-highest shadow-xl z-20 flex flex-col items-center gap-0.5" id="chart-tooltip">
+<span class="font-code-md text-code-md text-tertiary" id="tooltip-val">142 req/s</span>
+<span class="font-label-mono text-[9px] text-on-surface-variant" id="tooltip-time">16:40 UTC</span>
+</div>
+<!-- Vertical Scrubber Guideline -->
+<div class="absolute top-0 bottom-8 w-[1px] bg-primary/40 pointer-events-none opacity-0 transition-opacity" id="chart-scrubber"></div>
+<svg class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 700 240">
+<defs>
+<linearGradient id="primaryAreaGrad" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#c0c1ff" stop-opacity="0.28"></stop>
+<stop offset="85%" stop-color="#c0c1ff" stop-opacity="0.0"></stop>
+</linearGradient>
+<linearGradient id="tertiaryAreaGrad" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#2fd9f4" stop-opacity="0.22"></stop>
+<stop offset="90%" stop-color="#2fd9f4" stop-opacity="0.0"></stop>
+</linearGradient>
+</defs>
+<!-- Grid Guide lines (Ultra subtle) -->
+<line stroke="#34343a" stroke-dasharray="3 4" stroke-opacity="0.35" x1="0" x2="700" y1="50" y2="50"></line>
+<line stroke="#34343a" stroke-dasharray="3 4" stroke-opacity="0.35" x1="0" x2="700" y1="120" y2="120"></line>
+<line stroke="#34343a" stroke-dasharray="3 4" stroke-opacity="0.35" x1="0" x2="700" y1="190" y2="190"></line>
+<!-- Tertiary Organic Fill + Line (Cached) -->
+<path d="M 0,180 C 70,165 110,140 180,145 C 250,150 280,110 350,120 C 420,130 460,80 540,85 C 610,90 650,40 700,55 L 700,210 L 0,210 Z" fill="url(#tertiaryAreaGrad)"></path>
+<path d="M 0,180 C 70,165 110,140 180,145 C 250,150 280,110 350,120 C 420,130 460,80 540,85 C 610,90 650,40 700,55" fill="none" stroke="#2fd9f4" stroke-linecap="round" stroke-width="2"></path>
+<!-- Primary Wave Fill + Line (Live Intercepted) -->
+<path d="M 0,200 C 60,190 120,155 190,160 C 260,165 310,90 380,100 C 450,110 490,45 560,50 C 630,55 670,20 700,25 L 700,210 L 0,210 Z" fill="url(#primaryAreaGrad)"></path>
+<path d="M 0,200 C 60,190 120,155 190,160 C 260,165 310,90 380,100 C 450,110 490,45 560,50 C 630,55 670,20 700,25" fill="none" stroke="#c0c1ff" stroke-linecap="round" stroke-width="2.5"></path>
+<!-- Live Pulsing Hotspot Node -->
+<circle class="animate-ping" cx="560" cy="50" fill="#c0c1ff" r="4" style="animation-duration: 2.5s;"></circle>
+<circle cx="560" cy="50" fill="#ffffff" r="3.5"></circle>
+</svg>
+<!-- Timeline X-Axis Labels -->
+<div class="w-full flex items-center justify-between pt-2 px-1 text-on-surface-variant font-label-mono text-label-mono">
+<span>00:00</span>
+<span>04:00</span>
+<span>08:00</span>
+<span>12:00</span>
+<span>16:00</span>
+<span>20:00</span>
+<span class="text-tertiary">Live Now</span>
+</div>
+</div>
+<!-- Micro Meta Summary Footer -->
+<div class="mt-space-md pt-space-md border-t border-surface-container-high/30 flex flex-wrap items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<div>
+<span class="block font-label-mono text-[10px] uppercase text-on-surface-variant">Throughput Peak</span>
+<span class="font-code-md text-code-md text-on-surface">318.4 req/s</span>
+</div>
+<div class="h-6 w-[1px] bg-surface-container-high"></div>
+<div>
+<span class="block font-label-mono text-[10px] uppercase text-on-surface-variant">Replay Accuracy</span>
+<span class="font-code-md text-code-md text-on-surface">100.0%</span>
+</div>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-md text-label-md">
+<span>Zero dropouts recorded</span>
+<span class="material-symbols-outlined text-[14px] text-tertiary">check</span>
+</div>
+</div>
+</div>
+<!-- Top Services Breakdown (4 Cols) -->
+<div class="lg:col-span-4 p-space-lg rounded-xl bg-surface-container-low flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-md">
+<div>
+<span class="font-label-mono text-label-mono uppercase tracking-widest text-on-surface-variant">Distribution</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mt-0.5">Top Proxied APIs</h3>
+</div>
+<span class="font-label-mono text-label-mono text-on-surface-variant">4 Active</span>
+</div>
+<!-- Services List -->
+<div class="flex flex-col gap-space-sm mt-space-md">
+<!-- Service: OpenAI -->
+<div class="group flex items-center justify-between p-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-on-surface">
+<!-- OpenAI Monogram / Minimal SVG -->
+<svg class="w-4 h-4 text-on-surface" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+<path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm0 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12z" stroke-dasharray="2 2"></path>
+</svg>
+</div>
+<div class="truncate">
+<span class="block font-body-md text-body-md text-on-surface font-medium truncate">OpenAI v1/chat</span>
+<span class="font-label-mono text-label-mono text-on-surface-variant">612 calls · 920ms avg</span>
+</div>
+</div>
+<span class="font-label-mono text-label-mono px-2 py-0.5 rounded bg-surface-container-low text-tertiary">49.1%</span>
+</div>
+<!-- Service: GitHub -->
+<div class="group flex items-center justify-between p-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-on-surface">
+<!-- GitHub Minimal SVG -->
+<svg class="w-4 h-4 text-on-surface" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+</svg>
+</div>
+<div class="truncate">
+<span class="block font-body-md text-body-md text-on-surface font-medium truncate">GitHub Octokit</span>
+<span class="font-label-mono text-label-mono text-on-surface-variant">340 calls · 32ms avg</span>
+</div>
+</div>
+<span class="font-label-mono text-label-mono px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant">27.2%</span>
+</div>
+<!-- Service: Stripe -->
+<div class="group flex items-center justify-between p-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary">
+<!-- Stripe S Glyph -->
+<span class="font-display text-[15px] font-bold">S</span>
+</div>
+<div class="truncate">
+<span class="block font-body-md text-body-md text-on-surface font-medium truncate">Stripe Webhooks</span>
+<span class="font-label-mono text-label-mono text-on-surface-variant">198 calls · 18ms avg</span>
+</div>
+</div>
+<span class="font-label-mono text-label-mono px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant">15.9%</span>
+</div>
+<!-- Service: Discord -->
+<div class="group flex items-center justify-between p-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-secondary">
+<!-- Discord minimal controller -->
+<svg class="w-4 h-4 text-secondary" fill="currentColor" viewBox="0 0 24 24">
+<path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09-.01-.02-.04-.03-.07-.03-1.5.26-2.93.71-4.27 1.33-.01 0-.02.01-.03.02-2.72 4.07-3.47 8.03-3.1 11.95 0 .02.01.04.03.05 1.8 1.32 3.53 2.12 5.24 2.65.03.01.06 0 .07-.02.4-.55.76-1.13 1.07-1.74.02-.04 0-.08-.04-.09-.57-.22-1.11-.48-1.64-.78-.04-.02-.04-.08-.01-.11.11-.08.22-.17.33-.25.02-.02.05-.02.07-.01 3.44 1.57 7.15 1.57 10.55 0 .02-.01.05-.01.07.01.11.09.22.17.33.26.04.03.04.09-.01.11-.52.31-1.07.56-1.64.78-.04.01-.05.06-.04.09.32.61.68 1.19 1.07 1.74.01.02.05.03.07.02 1.72-.53 3.45-1.33 5.25-2.65.02-.01.03-.03.03-.05.44-4.53-.73-8.46-3.1-11.95-.01-.01-.02-.02-.04-.02zM8.52 14.91c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12 0 1.17-.84 2.12-1.89 2.12zm6.97 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12 0 1.17-.83 2.12-1.89 2.12z"></path>
+</svg>
+</div>
+<div class="truncate">
+<span class="block font-body-md text-body-md text-on-surface font-medium truncate">Discord Bot Gateway</span>
+<span class="font-label-mono text-label-mono text-on-surface-variant">98 calls · 41ms avg</span>
+</div>
+</div>
+<span class="font-label-mono text-label-mono px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant">7.8%</span>
+</div>
+</div>
+</div>
+<button class="w-full mt-space-lg py-2 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors font-label-md text-label-md text-on-surface-variant hover:text-on-surface flex items-center justify-center gap-1.5">
+<span>Manage Proxy Route Matchers</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Bottom Highlight Deck: Recent Activity & Security Flags -->
+<div class="w-full p-space-lg rounded-xl bg-surface-container-low flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Recent Activity &amp; Intercept Flags</h3>
+</div>
+<a class="font-label-mono text-label-mono text-primary hover:text-primary-fixed transition-colors flex items-center gap-1" href="#">
+<span>Stream Log</span>
+<span class="material-symbols-outlined text-[12px]">open_in_new</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md pt-space-xs">
+<!-- Activity Event 1 -->
+<div class="p-space-md rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors flex flex-col justify-between gap-space-md group">
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-space-xs text-tertiary">
+<span class="material-symbols-outlined text-[18px]">auto_fix_high</span>
+<span class="font-label-mono text-label-mono uppercase tracking-wider">Payload Tuning</span>
+</div>
+<span class="font-code-md text-[11px] text-on-surface-variant">2m ago</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface font-medium group-hover:text-primary transition-colors">OpenAI API call optimized</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Stripped unused conversational tokens; reduced egress payload by 38.2% via MitmForge rule.</p>
+</div>
+<div class="flex items-center gap-2 pt-space-xs border-t border-surface-container-high/40">
+<span class="font-label-mono text-[10px] text-tertiary px-1.5 py-0.5 rounded bg-tertiary/10">SAVED 412 TOKENS</span>
+<span class="font-label-mono text-[10px] text-on-surface-variant">POST /v1/chat</span>
+</div>
+</div>
+<!-- Activity Event 2 -->
+<div class="p-space-md rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors flex flex-col justify-between gap-space-md group">
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-space-xs text-primary">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+<span class="font-label-mono text-label-mono uppercase tracking-wider">HMAC Verified</span>
+</div>
+<span class="font-code-md text-[11px] text-on-surface-variant">8m ago</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface font-medium group-hover:text-primary transition-colors">Stripe webhook verified</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Event <span class="font-code-md text-[11px]">evt_3Nx4902</span> signature cryptographic checksum matched. Passed through safely.</p>
+</div>
+<div class="flex items-center gap-2 pt-space-xs border-t border-surface-container-high/40">
+<span class="font-label-mono text-[10px] text-primary px-1.5 py-0.5 rounded bg-primary/10">200 OK</span>
+<span class="font-label-mono text-[10px] text-on-surface-variant">customer.subscription.updated</span>
+</div>
+</div>
+<!-- Activity Event 3 (Warning) -->
+<div class="p-space-md rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors flex flex-col justify-between gap-space-md group">
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-space-xs text-error">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+<span class="font-label-mono text-label-mono uppercase tracking-wider">Security Intercept</span>
+</div>
+<span class="font-code-md text-[11px] text-on-surface-variant">19m ago</span>
+</div>
+<div>
+<h4 class="font-body-md text-body-md text-on-surface font-medium group-hover:text-error transition-colors">Suspicious token warning</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Detected unhashed Authorization header originating from rogue test worker <span class="font-code-md text-[11px]">node-eu-dev</span>.</p>
+</div>
+<div class="flex items-center gap-2 pt-space-xs border-t border-surface-container-high/40">
+<span class="font-label-mono text-[10px] text-error px-1.5 py-0.5 rounded bg-error-container/40">QUARANTINED</span>
+<span class="font-label-mono text-[10px] text-on-surface-variant">Authorization: Bearer ***</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Micro Interaction Script for Area Graph Scrubber -->
+<script>
+    (function initTelemetryHover() {
+      const container = document.getElementById('chart-container');
+      const tooltip = document.getElementById('chart-tooltip');
+      const scrubber = document.getElementById('chart-scrubber');
+      const tooltipVal = document.getElementById('tooltip-val');
+      const tooltipTime = document.getElementById('tooltip-time');
+
+      if (!container || !tooltip || !scrubber) return;
+
+      container.addEventListener('mousemove', (e) => {
+        const rect = container.getBoundingClientRect();
+        const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+        const pct = x / rect.width;
+
+        scrubber.style.left = `${x}px`;
+        scrubber.style.opacity = '1';
+
+        tooltip.style.left = `${x}px`;
+        tooltip.style.top = `${Math.sin(pct * Math.PI) * 60 + 60}px`;
+        tooltip.style.opacity = '1';
+
+        // Dynamic simulated values
+        const simulatedReq = Math.round(90 + Math.sin(pct * 5) * 40 + pct * 90);
+        const hours = Math.floor(pct * 24).toString().padStart(2, '0');
+        const minutes = Math.floor((pct * 1440) % 60).toString().padStart(2, '0');
+
+        tooltipVal.textContent = `${simulatedReq} req/s`;
+        tooltipTime.textContent = `${hours}:${minutes} UTC`;
+      });
+
+      container.addEventListener('mouseleave', () => {
+        scrubber.style.opacity = '0';
+        tooltip.style.opacity = '0';
+      });
+    })();
+  </script>
+</div></main>
+
+</body></html>
