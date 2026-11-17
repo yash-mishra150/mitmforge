@@ -76,20 +76,22 @@ export function RowDetail({ row }: { row: TrafficRow }) {
   return (
     <div className="flex h-80 shrink-0 flex-col overflow-hidden rounded-xl border border-line bg-surface shadow-2xl">
       {/* Summary strip */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface px-4 py-2.5">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="rounded bg-accent px-2 py-0.5 font-mono text-[11px] font-bold text-app">
+      <div className="flex items-center justify-between gap-2 border-b border-line bg-surface px-4 py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 rounded bg-accent px-2 py-0.5 font-mono text-[11px] font-bold text-app">
             {row.method === "CONNECT" ? "TUNNEL" : row.method}
           </span>
-          <span className="text-[14px] font-semibold text-fg truncate">{parseHost(row.url)}</span>
-          <span className="font-mono text-[12px] text-muted truncate">{row.url}</span>
-          <span className="h-4 w-px bg-line" />
-          <span className="flex items-center gap-2 font-mono text-[11px]">
+          <span className="shrink-0 text-[14px] font-semibold text-fg truncate">{parseHost(row.url)}</span>
+          <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-muted" title={row.url}>
+            {row.url}
+          </span>
+          <span className="h-4 w-px shrink-0 bg-line" />
+          <span className="flex shrink-0 items-center gap-2 font-mono text-[11px]">
             {statusPill()}
             <span className="text-fg">{row.durationMs !== null ? `${row.durationMs}ms` : "…"}</span>
           </span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-1.5">
           <span
             className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${
               row.status !== null && row.status < 400
