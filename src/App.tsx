@@ -28,6 +28,7 @@ import {
   Loader2,
   Search,
   FileDown,
+  Zap,
 } from "lucide-react";
 
 const PROXY_EVENT = "proxy://event";
@@ -213,11 +214,19 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col bg-app text-fg">
-      {/* Top bar — left: wired controls; center: status; right: settings + window controls */}
-      <header className="titlebar flex h-10 items-center border-b border-line bg-app px-3 select-none" data-tauri-drag-region>
-        {/* Left: wired control buttons + app name + status */}
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="flex items-center gap-0.5">
+      {/* Top bar — left: brand + record controls + status; right: tool toolbar + window controls */}
+      <header className="titlebar flex h-10 items-center justify-between border-b border-line bg-app px-3 select-none" data-tauri-drag-region>
+        {/* Left: brand mark, record controls, status, REC badge */}
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-[1px] shadow-sm shadow-indigo-500/20">
+              <div className="flex h-full w-full items-center justify-center rounded-[5px] bg-app">
+                <Zap className="h-3 w-3 text-accent" />
+              </div>
+            </div>
+            <span className="text-[13px] font-semibold tracking-wide text-fg">mitmforge</span>
+          </div>
+          <div className="flex shrink-0 items-center gap-0.5">
             <button
               type="button"
               onClick={toggleRecording}
@@ -243,28 +252,67 @@ export default function App() {
             >
               <StopCircle size={14} />
             </button>
-            <button
-              type="button"
-              onClick={clearTraffic}
-              className={ICON_BTN}
-              title="Clear traffic"
-              aria-label="Clear traffic"
-            >
-              <Trash2 size={14} />
-            </button>
           </div>
-
-          <div className="flex items-center gap-2 cursor-default">
-            <span className="relative flex h-8 w-8 items-center justify-center">
-              <span className="absolute inset-0 rounded-full bg-accent/20" />
-              <span className="relative inline-block h-1.5 w-1.5 rounded-full bg-accent" />
-            </span>
-            <span className="text-xs font-medium text-fg tracking-tight truncate">mitmforge | Listening on 127.0.0.1:8080 | HTTP/1.1</span>
-          </div>
+          <span className="hidden truncate font-mono text-[11px] text-muted lg:block">
+            Listening on <span className="text-fg">127.0.0.1:8080</span>
+            <span className="mx-1.5 text-line">|</span>HTTP/1.1
+          </span>
+          {recording && (
+            <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-success/20 bg-success/10 px-2 py-0.5">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-success" />
+              <span className="font-mono text-[10px] font-medium tracking-wider text-success">REC</span>
+            </div>
+          )}
         </div>
 
-        {/* Right: settings gear + window controls */}
-        <div className="flex items-center gap-0.5">
+        {/* Right: quick actions toolbar + settings + window controls */}
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={clearTraffic}
+            className={ICON_BTN}
+            title="Clear traffic"
+            aria-label="Clear traffic"
+          >
+            <Trash2 size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={toggleSystem}
+            className={`${ICON_BTN} ${system ? "text-success border-success/30 bg-success/5" : ""}`}
+            title={`System proxy ${system ? "on" : "off"}`}
+            aria-label={`System proxy ${system ? "on" : "off"}`}
+          >
+            <Globe size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={trustCa}
+            className={`${ICON_BTN} ${caTrusted ? "text-success border-success/30 bg-success/5" : ""}`}
+            title={caTrusted ? "CA trusted" : "Trust CA (install root certificate)"}
+            aria-label={caTrusted ? "CA trusted" : "Trust CA"}
+          >
+            <ShieldCheck size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={toggleAutoSave}
+            className={`${ICON_BTN} ${autoSave ? "text-success border-success/30 bg-success/5" : ""}`}
+            title={`Auto-save ${autoSave ? "on" : "off"}`}
+            aria-label={`Auto-save ${autoSave ? "on" : "off"}`}
+          >
+            <Save size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={analyze}
+            disabled={analyzing}
+            className={`${ICON_BTN} ${analyzing ? "opacity-50 cursor-not-allowed" : ""}`}
+            title="Analyze suspicious (AI)"
+            aria-label="Analyze suspicious"
+          >
+            <Sparkles size={14} />
+          </button>
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}
@@ -274,7 +322,7 @@ export default function App() {
           >
             <Settings size={16} />
           </button>
-          <div className="w-px h-5 bg-line mx-1" />
+          <div className="mx-1 h-5 w-px bg-line" />
           <button
             type="button"
             onClick={minimize}
@@ -320,45 +368,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-0.5">
-          <button
-            type="button"
-            onClick={toggleSystem}
-            className={`${ICON_BTN} ${system ? "text-success border-success/30 bg-success/5" : ""}`}
-            title={`System proxy ${system ? "on" : "off"}`}
-            aria-label={`System proxy ${system ? "on" : "off"}`}
-          >
-            <Globe size={14} />
-          </button>
-          <button
-            type="button"
-            onClick={trustCa}
-            className={`${ICON_BTN} ${caTrusted ? "text-success border-success/30 bg-success/5" : ""}`}
-            title={caTrusted ? "CA trusted" : "Trust CA (install root certificate)"}
-            aria-label={caTrusted ? "CA trusted" : "Trust CA"}
-          >
-            <ShieldCheck size={14} />
-          </button>
-          <button
-            type="button"
-            onClick={toggleAutoSave}
-            className={`${ICON_BTN} ${autoSave ? "text-success border-success/30 bg-success/5" : ""}`}
-            title={`Auto-save ${autoSave ? "on" : "off"}`}
-            aria-label={`Auto-save ${autoSave ? "on" : "off"}`}
-          >
-            <Save size={14} />
-          </button>
-          <button
-            type="button"
-            onClick={analyze}
-            disabled={analyzing}
-            className={`${ICON_BTN} ${analyzing ? "opacity-50 cursor-not-allowed" : ""}`}
-            title="Analyze suspicious (AI)"
-            aria-label="Analyze suspicious"
-          >
-            <Sparkles size={14} />
-          </button>
-          <div className="h-4 w-px bg-line mx-1" />
+        <div className="flex shrink-0 items-center gap-1.5">
           <button
             type="button"
             onClick={exportHar}

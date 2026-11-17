@@ -1,10 +1,57 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  ChevronRight,
+  ChevronLeft,
+  Lock,
+  LockOpen,
+  Monitor,
+  Pin,
+  Search,
+  Star,
+  Zap,
+} from "lucide-react";
 import { useTraffic } from "./store";
-import { groupByApp, buildDomainTree, pinnedRows } from "./selectors";
-import { FileText, Globe, Star, Pin, Archive, Monitor, LayoutDashboard, User, ChevronRight, X } from "lucide-react";
+import { buildDomainTree, groupByApp, parseHost, pinnedRows } from "./selectors";
 
-/** Left nav: Capture / Overview / Favorites / Pinned / Saved / All / Apps / Domains. */
+const MONO_COLORS = [
+  "bg-orange-500/20 border-orange-500/40 text-orange-400",
+  "bg-purple-500/20 border-purple-500/30 text-purple-400",
+  "bg-blue-500/20 border-blue-500/30 text-blue-400",
+  "bg-emerald-500/20 border-emerald-500/30 text-emerald-400",
+  "bg-cyan-500/20 border-cyan-500/30 text-cyan-400",
+  "bg-amber-500/20 border-amber-500/30 text-amber-400",
+];
+
+function monoColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return MONO_COLORS[h % MONO_COLORS.length];
+}
+
+function monogram(name: string): string {
+  const clean = name.replace(/\.exe$/i, "").replace(/[^a-zA-Z0-9]/g, "");
+  return (clean.slice(0, 2) || "?").toUpperCase();
+}
+
+/** Tiny sparkline path from the client's row timestamps (last 12 buckets of 3s). */
+function sparkline(rows: Array<{ started_at_ms: number }>): string {
+  if (rows.length < 2) return "";
+  const now = Date.now();
+  const BUCKETS = 12;
+  const span = 3000;
+  const counts = new Array<number>(BUCKETS).fill(0);
+  for (const r of rows) {
+    const b = BUCKETS - 1 - Math.floor((now - r.started_at_ms) / span);
+    if (b >= 0 && b < BUCKETS) counts[b]++;
+  }
+  const max = Math.max(...counts, 1);
+  const pts = counts.map((c, i) => `${(i / (BUCKETS - 1)) * 34 + 1},${12 - (c / max) * 10}`);
+  return `M${pts.join(" L")}`;
+}
+
+/** Left nav: collapsible rail (52px) ↔ expanded cockpit (260px). */
 export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overview") => void }) {
+  const [expanded, setExpanded] = useState(true);
   const rows = useTraffic((s) => s.rows);
   const pinned = useTraffic((s) => s.pinned);
   const setHostFilter = useTraffic((s) => s.setHostFilter);
@@ -13,257 +60,350 @@ export function Sidebar({ onViewChange }: { onViewChange: (view: "log" | "overvi
   const hostFilter = useTraffic((s) => s.hostFilter);
   const sidebarView = useTraffic((s) => s.sidebarView);
   const setSidebarView = useTraffic((s) => s.setSidebarView);
+
+  const appData = groupByApp(rows);
+  const domainData = buildDomainTree(rows);
+  const pinnedData = pinnedRows(rows, pinned);
   const clearFilters = () => {
     setHostFilter(null);
     setClientFilter(null);
     setSidebarView("capture");
   };
 
-  const appData = groupByApp(rows);
-  const domainData = buildDomainTree(rows);
-  const pinnedData = pinnedRows(rows, pinned);
+  // Session duration ticks once per second while expanded.
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (!expanded) return;
+    const t = setInterval(() => tick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [expanded]);
+  const oldest = rows.length > 0 ? rows[rows.length - 1].started_at_ms : 0;
+  const newest = rows.length > 0 ? rows[0].started_at_ms : 0;
+  const secs = oldest > 0 ? Math.max(0, Math.floor((newest - oldest) / 1000)) : 0;
+  const duration = `${String(Math.floor(secs / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
+  const httpCount = rows.filter((r) => r.scheme === "http").length;
 
-  const [captureExpanded, setCaptureExpanded] = useState(true);
-  const [appsExpanded, setAppsExpanded] = useState(true);
-  const [domainsExpanded, setDomainsExpanded] = useState(true);
-
-  return (
-    <div className="flex w-64 shrink-0 flex-col overflow-auto border-r border-line bg-surface">
-      <Section
-        title="Capture"
-        icon={<Monitor className="h-3 w-3" />}
-        expanded={captureExpanded}
-        onToggle={() => setCaptureExpanded(!captureExpanded)}
-      >
-        <NavItem
-          label="Live Capture"
-          count={rows.length}
-          view="log"
-          onViewChange={onViewChange}
-          icon={<FileText className="h-3 w-3" />}
-          isActive={sidebarView === "capture"}
-          onClick={clearFilters}
-        />
-        <NavItem
-          label="Overview"
-          view="overview"
-          onViewChange={onViewChange}
-          icon={<LayoutDashboard className="h-3 w-3" />}
-        />
-        <NavItem
-          label="Favorites"
-          count={0}
-          icon={<Star className="h-3 w-3" />}
-          isActive={sidebarView === "favorites"}
-          onClick={() => setSidebarView("favorites")}
-        />
-        <NavItem
-          label="Pinned"
-          count={pinnedData.length}
-          icon={<Pin className="h-3 w-3" />}
-          isActive={sidebarView === "pinned"}
-          onClick={() => setSidebarView("pinned")}
-        />
-        <NavItem
-          label="Saved"
-          count={0}
-          icon={<Archive className="h-3 w-3" />}
-          isActive={sidebarView === "saved"}
-          onClick={() => setSidebarView("saved")}
-        />
-        <NavItem
-          label="All Requests"
-          count={rows.length}
-          icon={<Globe className="h-3 w-3" />}
-          isActive={sidebarView === "all"}
-          onClick={() => setSidebarView("all")}
-        />
-      </Section>
-
-      <Section
-        title="Apps"
-        icon={<User className="h-3 w-3" />}
-        expanded={appsExpanded}
-        onToggle={() => setAppsExpanded(!appsExpanded)}
-        count={appData.length}
-      >
-        {appData.length === 0 ? (
-          <Empty />
-        ) : (
-          appData.map((item) => (
-            <Item
-              key={item.client}
-              label={item.client}
-              count={item.count}
-              icon={<Monitor className="h-3 w-3" />}
-              isActive={clientFilter === item.client}
-              onClick={() => setClientFilter(item.client)}
-              onClear={clearFilters}
-            />
-          ))
-        )}
-      </Section>
-
-      <Section
-        title="Domains"
-        icon={<Globe className="h-3 w-3" />}
-        expanded={domainsExpanded}
-        onToggle={() => setDomainsExpanded(!domainsExpanded)}
-        count={domainData.length}
-      >
-        {domainData.length === 0 ? (
-          <Empty />
-        ) : (
-          domainData.map((item) => (
-            <div key={item.host}>
-              <Item
-                label={item.host}
-                count={item.count}
-                icon={<Globe className="h-3 w-3" />}
-                isActive={hostFilter === item.host}
-                onClick={() => setHostFilter(item.host)}
-                onClear={clearFilters}
-              />
-              <div className="ml-3 border-l border-line/50 pl-2">
-                {item.paths.map((p) => (
-                  <Item
-                    key={p.path}
-                    label={p.path}
-                    count={p.count}
-                    small
-                    onClick={() => setHostFilter(item.host)}
-                    onClear={clearFilters}
-                  />
-                ))}
-              </div>
-            </div>
-          ))
-        )}
-      </Section>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  icon,
-  children,
-  expanded,
-  onToggle,
-  count,
-}: {
-  title: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-  expanded: boolean;
-  onToggle: () => void;
-  count?: number;
-}) {
-  return (
-    <div className="px-3">
-      <button
-        onClick={onToggle}
-        className="flex items-center gap-2 w-full px-2 py-2 text-[10px] font-medium uppercase tracking-wider text-muted hover:text-fg transition-colors rounded-md"
-        aria-expanded={expanded}
-      >
-        {icon && <span className="text-muted/50 flex-shrink-0">{icon}</span>}
-        <span className="truncate flex-1">{title}</span>
-        {count !== undefined && <span className="text-muted/60 text-[10px] font-medium">{count}</span>}
-        <ChevronRight
-          className={`flex-shrink-0 text-muted/50 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
-          size={12}
-        />
-      </button>
-      <div
-        className={`overflow-hidden transition-all duration-200 ease-in-out ${expanded ? "pb-2 opacity-100 max-h-96" : "pb-0 opacity-0 max-h-0"}`}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-/** One clickable nav row with icon. */
-function NavItem({
-  label,
-  view,
-  count,
-  icon,
-  onViewChange,
-  isActive = false,
-  onClick,
-}: {
-  label: string;
-  view?: "log" | "overview";
-  count?: number;
-  icon?: React.ReactNode;
-  onViewChange?: (view: "log" | "overview") => void;
-  isActive?: boolean;
-  onClick?: () => void;
-}) {
-  const handleClick = () => {
-    if (view && onViewChange) onViewChange(view);
-    if (onClick) onClick();
-  };
-  return (
-    <div
-      onClick={handleClick}
-      className={`flex cursor-pointer items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all duration-150 ${isActive
-        ? "bg-[color-mix(in_srgb,var(--mt-accent)_10%,transparent)] text-accent border-l-2 border-accent"
-        : "text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] hover:text-fg"}`}
-    >
-      {icon && <span className="flex-shrink-0 text-muted/60 group-hover:text-fg transition-colors">{icon}</span>}
-      <span className="truncate flex-1">{label}</span>
-      {count !== undefined && <span className="text-muted/60 text-[10px] font-medium">{count}</span>}
-    </div>
-  );
-}
-
-/** One clickable sidebar entry with an optional count badge. */
-function Item({
-  label,
-  count,
-  small,
-  icon,
-  onClick,
-  isActive = false,
-  onClear,
-}: {
-  label: string;
-  count?: number;
-  small?: boolean;
-  icon?: React.ReactNode;
-  onClick: () => void;
-  isActive?: boolean;
-  onClear?: () => void;
-}) {
-  return (
-    <div className="relative">
-      <div
-        onClick={onClick}
-        className={`flex cursor-pointer items-center gap-2 px-2 rounded-md hover:bg-[color-mix(in_srgb,var(--mt-text)_4%,transparent)] transition-colors duration-150 ${small ? "py-0.5 text-xs text-muted" : "py-1.5 text-sm text-fg"} ${isActive ? "bg-[color-mix(in_srgb,var(--mt-accent)_10%,transparent)] text-accent border-l-2 border-accent" : ""}`}
-      >
-        {icon && <span className="flex-shrink-0 text-muted/50 group-hover:text-fg transition-colors">{icon}</span>}
-        <span className="truncate flex-1">{label}</span>
-        {count !== undefined && <span className="text-muted/60 text-[10px] font-medium">{count}</span>}
-        {isActive && onClear && (
+  if (!expanded) {
+    return (
+      <aside className="flex w-[52px] shrink-0 select-none flex-col items-center justify-between border-r border-line bg-surface py-2.5">
+        <div className="flex w-full flex-col items-center space-y-3">
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onClear();
-            }}
-            className="flex-shrink-0 ml-1 p-0.5 rounded text-muted/50 hover:text-danger hover:bg-red-500/10 transition-colors"
-            aria-label="Clear filter"
+            type="button"
+            onClick={() => setExpanded(true)}
+            title="Expand sidebar"
+            className="group relative flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] hover:text-fg"
           >
-            <X size={10} />
+            <ChevronRight className="h-4 w-4" />
           </button>
-        )}
+          <div className="relative flex h-8 w-8 items-center justify-center" title="Capturing">
+            <span className="absolute h-4 w-4 animate-ping rounded-full bg-success/20" />
+            <span className="h-2.5 w-2.5 rounded-full bg-success ring-2 ring-success/30" />
+          </div>
+          <div className="h-px w-7 bg-line" />
+          <RailButton
+            active={sidebarView === "capture"}
+            badge={rows.length}
+            title={`Live Capture (${rows.length})`}
+            onClick={() => {
+              onViewChange("log");
+              clearFilters();
+            }}
+            icon={<Zap className="h-4 w-4" />}
+          />
+          <RailButton
+            title="Overview"
+            onClick={() => onViewChange("overview")}
+            icon={<Monitor className="h-4 w-4" />}
+          />
+          <RailButton
+            active={sidebarView === "favorites"}
+            title="Favorites"
+            onClick={() => setSidebarView("favorites")}
+            icon={<Star className="h-4 w-4" />}
+          />
+          <RailButton
+            active={sidebarView === "pinned"}
+            badge={pinnedData.length}
+            title={`Pinned (${pinnedData.length})`}
+            onClick={() => setSidebarView("pinned")}
+            icon={<Pin className="h-4 w-4" />}
+          />
+          <div className="h-px w-7 bg-line" />
+          {appData.slice(0, 5).map((a) => (
+            <button
+              key={a.client}
+              type="button"
+              onClick={() => setClientFilter(clientFilter === a.client ? null : a.client)}
+              title={`${a.client} (${a.count} requests)`}
+              className={`relative flex h-8 w-8 items-center justify-center rounded-lg border font-bold text-[10px] ${monoColor(a.client)} ${
+                clientFilter === a.client ? "ring-1 ring-accent" : ""
+              }`}
+            >
+              {monogram(a.client)}
+              {a.count > 0 && (
+                <span className="absolute -bottom-1 -right-1 rounded-full border border-surface bg-accent px-1 text-[8px] font-mono leading-tight text-app">
+                  {a.count}
+                </span>
+              )}
+            </button>
+          ))}
+          <div className="h-px w-7 bg-line" />
+          <button
+            type="button"
+            onClick={() => setHostFilter(null)}
+            title={httpCount > 0 ? `${httpCount} unencrypted HTTP streams` : "All traffic encrypted"}
+            className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+              httpCount > 0 ? "text-warning hover:bg-warning/10" : "text-success hover:bg-success/10"
+            }`}
+          >
+            {httpCount > 0 ? <LockOpen className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+          </button>
+        </div>
+        <div className="flex flex-col items-center space-y-2">
+          <button
+            type="button"
+            title="Search"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] hover:text-fg"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+          <span className="h-1.5 w-1.5 rounded-full bg-success" title="System proxy on" />
+        </div>
+      </aside>
+    );
+  }
+
+  return (
+    <aside className="flex w-[260px] shrink-0 select-none flex-col overflow-hidden border-r border-line bg-surface">
+      <div className="flex-1 space-y-3.5 overflow-y-auto overflow-x-hidden p-2.5">
+        {/* Capture cockpit */}
+        <div className="rounded-lg border border-line bg-app p-2.5 transition-colors hover:border-line">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success/50 opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-success" />
+              </span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-fg">Live Capture Active</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              title="Collapse to rail"
+              className="rounded p-1 text-muted transition-colors hover:bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] hover:text-fg"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2 border-t border-line pt-1">
+            <div className="rounded border border-line bg-app px-2 py-1.5">
+              <span className="text-[10px] uppercase tracking-tight text-muted">Intercepted</span>
+              <div className="font-mono text-xs font-semibold text-accent">{rows.length} reqs</div>
+            </div>
+            <div className="rounded border border-line bg-app px-2 py-1.5">
+              <span className="text-[10px] uppercase tracking-tight text-muted">Duration</span>
+              <div className="font-mono text-xs font-semibold text-fg">{duration}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Saved views */}
+        <div className="space-y-1">
+          <div className="px-1 text-[10px] font-semibold uppercase tracking-wider text-muted">Saved Views</div>
+          <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+            <ViewCard
+              label="All Traffic"
+              count={rows.length}
+              active={sidebarView === "capture"}
+              dot="bg-accent"
+              onClick={() => {
+                onViewChange("log");
+                clearFilters();
+              }}
+            />
+            <ViewCard label="Errors" count={rows.filter((r) => r.status !== null && r.status >= 400).length} dot="bg-danger" onClick={() => onViewChange("log")} />
+            <ViewCard label="Pinned" count={pinnedData.length} dot="bg-warning" onClick={() => setSidebarView("pinned")} />
+            <ViewCard label="Favorites" count={0} dot="bg-warning" onClick={() => setSidebarView("favorites")} />
+          </div>
+        </div>
+
+        {/* Apps */}
+        <div className="space-y-1.5 pt-1">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Active Apps</span>
+            <span className="rounded bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted">
+              {appData.length}
+            </span>
+          </div>
+          {appData.length === 0 ? (
+            <Empty />
+          ) : (
+            <div className="space-y-1">
+              {appData.map((a) => {
+                const clientRows = rows.filter((r) => (r.client ?? "(unknown)") === a.client);
+                const path = sparkline(clientRows);
+                return (
+                  <button
+                    key={a.client}
+                    type="button"
+                    onClick={() => setClientFilter(clientFilter === a.client ? null : a.client)}
+                    className={`flex w-full items-center justify-between rounded-lg border px-2 py-1.5 text-left transition-all ${
+                      clientFilter === a.client
+                        ? "border-accent/30 bg-accent/10 text-fg"
+                        : "border-line bg-app text-muted hover:bg-app hover:text-fg"
+                    }`}
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[10px] font-bold ${monoColor(a.client)}`}>
+                        {monogram(a.client)}
+                      </span>
+                      <span className="truncate text-xs font-medium">{a.client}</span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      {path && (
+                        <svg viewBox="0 0 36 14" className="h-3.5 w-9 shrink-0 fill-none stroke-accent opacity-80">
+                          <path d={path} strokeWidth="1.2" strokeLinecap="round" />
+                        </svg>
+                      )}
+                      <span className="min-w-[20px] rounded bg-accent/15 px-1.5 py-0.5 text-center font-mono text-[11px] font-bold text-accent">
+                        {a.count}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Domains */}
+        <div className="space-y-1.5 pt-1">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted">Target Domains</span>
+            <span className="rounded bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted">
+              {domainData.length}
+            </span>
+          </div>
+          {domainData.length === 0 ? (
+            <Empty />
+          ) : (
+            <div className="space-y-1">
+              {domainData.slice(0, 12).map((d) => {
+                const secure = rows.some((r) => parseHost(r.url) === d.host && r.scheme !== "http");
+                return (
+                  <button
+                    key={d.host}
+                    type="button"
+                    onClick={() => setHostFilter(hostFilter === d.host ? null : d.host)}
+                    className={`flex w-full items-center justify-between rounded-lg border px-2 py-1.5 text-left transition-all ${
+                      hostFilter === d.host
+                        ? "border-accent/30 bg-accent/10 text-fg"
+                        : "border-line bg-app text-muted hover:bg-app hover:text-fg"
+                    }`}
+                  >
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      {secure ? (
+                        <Lock className="h-3 w-3 shrink-0 text-success" />
+                      ) : (
+                        <LockOpen className="h-3 w-3 shrink-0 text-danger" />
+                      )}
+                      <span className="truncate text-xs">{d.host}</span>
+                    </span>
+                    <span className="shrink-0 font-mono text-[11px] font-medium text-muted">{d.count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Footer status */}
+      <div className="flex items-center justify-between border-t border-line bg-app p-2 text-[11px]">
+        <div className="flex min-w-0 items-center gap-1.5 text-muted">
+          <span className="h-1.5 w-1.5 rounded-full bg-success" />
+          <span className="font-mono text-[10.5px]">8080</span>
+          <span className="text-line">·</span>
+          <span className="truncate">System Mode</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          title="Collapse sidebar"
+          className="rounded p-1 text-muted transition-colors hover:bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] hover:text-fg"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </aside>
   );
 }
 
-/** Empty-state placeholder. */
+function RailButton({
+  icon,
+  title,
+  onClick,
+  active = false,
+  badge,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  onClick: () => void;
+  active?: boolean;
+  badge?: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={`group relative flex h-9 w-9 items-center justify-center rounded-lg ${
+        active
+          ? "bg-accent/15 text-accent"
+          : "text-muted hover:bg-[color-mix(in_srgb,var(--mt-text)_6%,transparent)] hover:text-fg"
+      }`}
+    >
+      {active && <span className="absolute -left-1 top-1.5 h-6 w-1 rounded-r bg-accent" />}
+      {icon}
+      {badge !== undefined && badge > 0 && (
+        <span className="absolute -right-1 -top-1 rounded-full border border-surface bg-accent px-1 text-[9px] font-mono leading-tight text-app">
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function ViewCard({
+  label,
+  count,
+  active = false,
+  dot,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active?: boolean;
+  dot: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center justify-between rounded-md border px-2.5 py-1.5 text-left transition-all ${
+        active ? "border-accent/30 bg-accent/10 text-fg" : "border-line bg-app text-muted hover:text-fg"
+      }`}
+    >
+      <span className="flex items-center gap-1.5">
+        <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+        <span className="text-xs font-medium">{label}</span>
+      </span>
+      <span className={`font-mono text-[11px] font-semibold ${active ? "text-accent" : "text-muted"}`}>{count}</span>
+    </button>
+  );
+}
+
 function Empty() {
-  return <div className="px-3 py-2 text-xs text-muted/50 text-center">No data captured yet</div>;
+  return <div className="px-3 py-2 text-center text-xs text-muted/50">No data captured yet</div>;
 }

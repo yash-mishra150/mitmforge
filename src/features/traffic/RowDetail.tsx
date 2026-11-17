@@ -14,6 +14,19 @@ const TAB_LABELS: Record<(typeof TABS)[number], string> = {
   query: "Query",
   raw: "Raw",
 };
+
+/** Masks the Authorization header value from lossy header text (if present). */
+function maskAuth(headers: string | null | undefined): string | null {
+  if (!headers) return null;
+  for (const line of headers.split("\n")) {
+    const m = line.match(/^authorization:\s*(.+)$/i);
+    if (m) {
+      const v = m[1].trim();
+      return v.length > 12 ? `${v.slice(0, 8)}••••${v.slice(-4)}` : "••••";
+    }
+  }
+  return null;
+}
 type Tab = (typeof TABS)[number];
 
 /** Inspector deck for the selected row: summary strip, tabbed headers/bodies/query. */
@@ -170,7 +183,45 @@ export function RowDetail({ row }: { row: TrafficRow }) {
 
       {/* Content */}
       <div className="min-h-0 flex-1 overflow-auto p-3">
-        {tab === "bodies" && <TwoPane left="Request body" right="Response body" leftText={body?.req_body ?? null} rightText={body?.res_body ?? null} />}
+        {tab === "bodies" && (
+          <div className="grid h-full grid-cols-1 lg:grid-cols-[1fr_18rem] gap-3">
+            <TwoPane left="Request body" right="Response body" leftText={body?.req_body ?? null} rightText={body?.res_body ?? null} />
+            <aside className="hidden flex-col gap-3 overflow-y-auto border-l border-line pl-3 lg:flex">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Intercept Highlights</div>
+              <div className="rounded-lg border border-line bg-app p-2.5">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[10px] text-muted">Authorization</span>
+                  {maskAuth(body?.req_headers) && (
+                    <span className="rounded bg-success/10 px-1.5 py-0.5 text-[9px] font-medium text-success">Auto Redacted</span>
+                  )}
+                </div>
+                <div className="rounded border border-line bg-app p-1.5 font-mono text-[11px] text-fg break-all">
+                  {maskAuth(body?.req_headers) ?? "— not present"}
+                </div>
+              </div>
+              <div className="rounded-lg border border-line bg-app p-2.5">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[10px] text-muted">Content-Type</span>
+                </div>
+                <div className="font-mono text-[11px] text-fg break-all">{row.resContentType ?? row.req_content_type ?? "—"}</div>
+              </div>
+              <div className="space-y-1 pt-1 font-mono text-[10px] text-muted">
+                <div className="flex justify-between border-b border-line py-0.5">
+                  <span>Scheme</span>
+                  <span className="text-fg">{row.scheme || "—"}</span>
+                </div>
+                <div className="flex justify-between border-b border-line py-0.5">
+                  <span>Size</span>
+                  <span className="text-fg">{row.resSize ?? row.req_size ?? "—"}</span>
+                </div>
+                <div className="flex justify-between py-0.5">
+                  <span>Client</span>
+                  <span className="text-fg">{row.client ?? "—"}</span>
+                </div>
+              </div>
+            </aside>
+          </div>
+        )}
         {tab === "headers" && <TwoPane left="Request headers" right="Response headers" leftText={body?.req_headers ?? null} rightText={body?.res_headers ?? null} />}
         {tab === "raw" && <TwoPane mono left="Request" right="Response" leftText={body?.req_headers ?? null} rightText={body?.res_headers ?? null} />}
         {tab === "query" && <QueryParams url={row.url} />}
