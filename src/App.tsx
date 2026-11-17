@@ -373,8 +373,8 @@ export default function App() {
       </div>
 
       {/* Filter preset pills */}
-      <div className="flex h-9 items-center gap-1.5 overflow-x-auto border-b border-line bg-app px-3 py-1.5 scrollbar-hide">
-        <span className="hidden shrink-0 text-[11px] font-medium text-muted sm:inline">Presets:</span>
+      <div className="flex min-h-9 flex-wrap items-center gap-1.5 border-b border-line bg-app px-3 py-1.5">
+        <span className="mr-1 hidden shrink-0 text-[11px] font-medium text-muted sm:inline">Presets:</span>
         {CONTENT_TABS.map((tab) => {
           const isActive = contentTabs.includes(tab);
           return (
